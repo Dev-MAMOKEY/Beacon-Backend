@@ -1,1 +1,3 @@
-spring.application.name=beacon
+spring:
+  profiles:
+    active: local
