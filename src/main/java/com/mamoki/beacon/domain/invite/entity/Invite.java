@@ -1,4 +1,5 @@
 package com.mamoki.beacon.domain.invite.entity;
+import com.mamoki.beacon.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -23,4 +24,7 @@ public class Invite {
     @Column(name = "created_at")
     private Date createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private Member member;
 }
