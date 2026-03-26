@@ -1,5 +1,7 @@
 package com.mamoki.beacon.global.rsdata;
 
+import com.mamoki.beacon.global.exception.ErrorCode;
+
 import java.time.LocalDateTime;
 
 public record RsData<T>(
@@ -9,7 +11,7 @@ public record RsData<T>(
         LocalDateTime timestamp
 ) {
     public record ErrorInfo(
-            String code,
+            org.springframework.http.HttpStatus code,
             String message
     ) {
     }
@@ -20,7 +22,7 @@ public record RsData<T>(
     }
 
     // 실패 응답
-    public static <T> RsData<T> error(ErrorInfo error) {
-        return new RsData<>(false, null, new ErrorInfo(error.code, error.message), LocalDateTime.now());
+    public static <T> RsData<T> fail(ErrorCode errorCode) {
+        return new RsData<>(false, null, new ErrorInfo(errorCode.getHttpStatus(), errorCode.getMessage()), LocalDateTime.now());
     }
 }
