@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# 개발/운영 환경 설정 (민감한 정보 포함)
+src/main/resources/application-local.yml
+
+# 환경변수 파일
+.env
