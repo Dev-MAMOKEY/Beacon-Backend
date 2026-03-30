@@ -1,0 +1,35 @@
+package com.mamoki.beacon.domain.club_member.entity;
+
+import com.mamoki.beacon.domain.club.entity.Club;
+import com.mamoki.beacon.domain.member.entity.Member;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "club_member")
+public class ClubMember {
+
+    @EmbeddedId
+    private ClubMemberId id;
+
+    @MapsId("memberId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
+
+    @MapsId("clubId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "club_id")
+    private Club club;
+
+    @Column(name = "is_admin")
+    private Boolean isAdmin;
+
+    @Column(name = "joined_at")
+    private LocalDateTime joinedAt;
+}
