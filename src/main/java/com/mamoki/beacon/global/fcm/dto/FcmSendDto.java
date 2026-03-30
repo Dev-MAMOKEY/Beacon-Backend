@@ -9,8 +9,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class FcmDto {
-    private String title;
-    private String content;
-    private String fcmToken;
+public class FcmSendDto {
+    private String fcmToken; // 사용자의 fcm토큰을 서버로 보내기 위한 dto
 }
