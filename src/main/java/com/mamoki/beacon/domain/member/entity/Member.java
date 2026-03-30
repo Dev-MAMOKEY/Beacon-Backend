@@ -5,13 +5,19 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "member")
 public class Member extends GlobalEntity {
 
     @Column(name = "student_id")
-    private String stdId;
+    private int stdId;
+
+    @Column(name = "grade")
+    private int grade;
 
     @Column(name = "password_hash")
     private String password;
@@ -24,4 +30,10 @@ public class Member extends GlobalEntity {
 
     @Column(name = "push_enabled")
     private Boolean pushEnabled;
+
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
+    @Column(name = "rt_at")
+    private LocalDateTime rtAt;
 }

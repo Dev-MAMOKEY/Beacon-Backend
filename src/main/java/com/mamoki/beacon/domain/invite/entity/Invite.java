@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @AllArgsConstructor
@@ -13,16 +13,16 @@ public class Invite {
 
     @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "invite_id")
-    private Long inviteId;
+    private int inviteId;
 
     @Column(name = "invite_code")
     private String inviteCode;
 
     @Column(name = "revoked_at")
-    private Date revokedAt;
+    private LocalDateTime revokedAt;
 
     @Column(name = "created_at")
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
