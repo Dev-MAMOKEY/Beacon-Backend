@@ -27,8 +27,9 @@ public class ClubMember {
     @JoinColumn(name = "club_id")
     private Club club;
 
-    @Column(name = "is_admin")
-    private Boolean isAdmin;
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @Column(name = "joined_at")
     private LocalDateTime joinedAt;
