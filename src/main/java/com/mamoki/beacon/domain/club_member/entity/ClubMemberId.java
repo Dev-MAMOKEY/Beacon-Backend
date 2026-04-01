@@ -8,8 +8,8 @@ import java.util.Objects;
 @Embeddable
 public class ClubMemberId implements Serializable { // Member, Club의 기본키를 복합키로 받아오는 clubmember구현
 
-    private int memberId;
-    private int clubId;
+    private Long memberId;
+    private Long clubId;
 
     @Override
     public boolean equals(Object o) {

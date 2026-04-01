@@ -24,4 +24,3 @@ custom:
     secret-key: ${JWT_SECRET}
     access-exp-min: ${JWT_ACCESS_EXP_MIN:60} # 토큰 유효시간 : 60분
     refresh-exp-day: ${JWT_REFRESH_EXP_DAY:30} # RT 유효시간 : 30일
-
