@@ -39,3 +39,4 @@ application.yml
 application-local.yml
 resource/firebase/beacon-account.json
 src/main/resources/firebase/beacon-account.json
+src/main/resources/firebase/
