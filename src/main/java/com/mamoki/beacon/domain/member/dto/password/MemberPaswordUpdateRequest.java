@@ -11,6 +11,22 @@ public record MemberPaswordUpdateRequest(
             regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", // 숫자 영어 1개 이상 포함해야함
             message = "비밀번호는 영어와 숫자를 각각 1개 이상 포함해야 합니다."
     )
-    String password
+    String currentPassword,
+
+     @NotBlank(message = "새 비밀번호 값은 필수입니다.")
+     @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
+     @Pattern(
+             regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", // 숫자 영어 1개 이상 포함해야함
+             message = "비밀번호는 영어와 숫자를 각각 1개 이상 포함해야 합니다."
+     )
+     String newPassword,
+
+    @NotBlank(message = "비밀번호 확인 값은 필수입니다.")
+    @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
+    @Pattern(
+            regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", // 숫자 영어 1개 이상 포함해야함
+            message = "비밀번호는 영어와 숫자를 각각 1개 이상 포함해야 합니다."
+    )
+    String confirmNewPassword
 ) {
 }

@@ -1,11 +1,16 @@
 package com.mamoki.beacon.domain.member.entity;
 
 import com.mamoki.beacon.domain.auth.dto.SignupResponse;
+import com.mamoki.beacon.domain.member.dto.profile.MemberProfileResponse;
 import com.mamoki.beacon.global.entity.GlobalEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDateTime;
 
@@ -59,5 +64,18 @@ public class Member extends GlobalEntity {
     public void revokeRefreshToken() {
         this.refreshToken = null;
         this.rtAt = null;
+    }
+
+    public MemberProfileResponse toMemberProfileResponse() {
+        return new MemberProfileResponse(name, stdId, pushEnabled);
+    }
+
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+    }
+
+    public void updateProfile(String newName, Boolean changePushEnabled) {
+        this.name = newName;
+        this.pushEnabled = changePushEnabled;
     }
 }
