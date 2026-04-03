@@ -18,7 +18,9 @@ public class FcmConfig { //fcm키를 불러드리고 초기화하는 config파�
     @Value("${firebase.beacon-account.path}")
     private String SERVICE_ACCOUNT_PATH;
 
+
     @Bean
+    //json파일가지고 firebase에 접속하는 Bean
     public FirebaseApp firebaseApp() {
         try {
             FirebaseOptions options = FirebaseOptions.builder()
@@ -37,7 +39,7 @@ public class FcmConfig { //fcm키를 불러드리고 초기화하는 config파�
         }
     }
 
-    @Bean
+    @Bean //푸시알람 가능하게 하는 Bean
     public FirebaseMessaging firebaseMessaging(FirebaseApp firebaseApp) {
         return FirebaseMessaging.getInstance(firebaseApp);
     }
