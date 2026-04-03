@@ -17,4 +17,6 @@ public class SessionDto {
     private String sessionName;
     private LocalDateTime startAt;
     private LocalDateTime endAt;
+    private Long clubId;
+    private String uuid;
 }
