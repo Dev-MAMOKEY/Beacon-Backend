@@ -4,15 +4,13 @@ import com.mamoki.beacon.domain.club.entity.Club;
 import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.global.entity.GlobalEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
