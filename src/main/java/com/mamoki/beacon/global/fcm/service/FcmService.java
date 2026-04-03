@@ -13,6 +13,7 @@ import java.util.List;
 public class FcmService {
     private final FirebaseMessaging firebaseMessaging;
 
+    //단일알람 함수
     public void sendNotification(String title, String body, String fcmToken) {
         log.info("Attempting to send Notification (title: {}, body: {}, fcmToken: {})", title, body, fcmToken);
         send(createMessage(title, body, fcmToken));
@@ -27,8 +28,21 @@ public class FcmService {
                         .build())
                 .addAllTokens(fcmTokens)
                 .build();
+        sendMulti(multicastMessage);
+    }
+
+    private void send(Message message) {
+        try {
+            String response = firebaseMessaging.send(message);
+            log.info("단일 발송 성공: {}", response);
+        } catch (FirebaseMessagingException e) {
+            log.error("FCM 단일 발송 실패: {}", e.getMessage());
+        }
+    }
+
+    private void sendMulti(MulticastMessage message){
         try{
-            BatchResponse response = firebaseMessaging.sendEachForMulticast(multicastMessage);
+            BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
             log.info("성공: {}, 실패: {}", response.getSuccessCount(), response.getFailureCount());
         }
         catch (FirebaseMessagingException e){
@@ -36,15 +50,7 @@ public class FcmService {
         }
     }
 
-    private void send(Message message) {
-        try {
-            String response = firebaseMessaging.send(message);
-            log.info("Successfully send Notification: {}", response);
-        } catch (FirebaseMessagingException e) {
-            log.error("Fail to send Notification : {}", e.getMessage());
-        }
-    }
-
+    //단일 메세지를 위한 메세지 생성함수
     private Message createMessage(String title, String body, String fcmToken) {
         return Message.builder()
                 .setNotification(Notification.builder()
