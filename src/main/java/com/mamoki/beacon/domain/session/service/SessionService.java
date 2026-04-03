@@ -77,5 +77,13 @@ public class SessionService {
         sessionRepository.save(session);
     }
 
+    //session 종료하기 위한 함수
+    public void endedSession(Long sessionId){
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(()-> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+        session.setSessionStatus(SessionStatus.ENDED);
+        sessionRepository.save(session);
+    }
+
     //TOTP 인증 코드 세션 테이블에 해시값으로 저장?
 }
