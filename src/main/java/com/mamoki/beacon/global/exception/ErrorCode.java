@@ -18,6 +18,7 @@ public enum ErrorCode {
 
     // 회원 및 동아리 관련 예외 (400, 409)
     INVALID_INVITE_CODE(HttpStatus.BAD_REQUEST, "INVALID_INVITE_CODE", "초대코드가 존재하지 않거나 유효하지 않습니다."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_NOT_FOUND", "해당 회원이 존재하지 않습니다."),
     DUPLICATE_STUDENT_ID(HttpStatus.CONFLICT, "DUPLICATE_STUDENT_ID", "이미 사용중인 학번입니다."),
     ALREADY_CLUB_MEMBER(HttpStatus.CONFLICT, "ALREADY_CLUB_MEMBER", "이미 해당 동아리의 멤버입니다."),
 
