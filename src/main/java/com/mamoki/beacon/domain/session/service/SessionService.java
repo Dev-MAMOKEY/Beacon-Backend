@@ -34,16 +34,15 @@ public class SessionService {
                 .endAt(sessionDto.getEndAt())
                 .club(club)
                 .build();
-        //세션이 ACTIVED이면 에러던짐
-        if(session.getSessionStatus() == SessionStatus.ACTIVED){
-            throw new CustomException(ErrorCode.SESSION_ALREADY_ACTIVE);
-        }
         sessionRepository.save(session);
     }
 
     //softDelete 시간 업데이트
     public void softDeletedSession(Long sessionId){
         Session session = sessionRepository.findById(sessionId).orElseThrow(()-> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+        if(session.getSessionStatus() == SessionStatus.ACTIVED){
+            throw new CustomException(ErrorCode.NOT_DELETED_SESSION);
+        }
         session.setDeletedAt(LocalDateTime.now());
         sessionRepository.save(session);
     }
