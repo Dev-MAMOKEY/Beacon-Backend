@@ -1,21 +1,28 @@
 package com.mamoki.beacon.global.security;
 
+import com.mamoki.beacon.global.security.jwt.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableWebSecurity // Spring Security를 활성화하는 어노테이션
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable() // CSRF 보호 비활성화 (API 서버에서는 일반적으로 필요 없음)
-            .authorizeHttpRequests()
-                .requestMatchers("/api/**").authenticated() // API 경로는 인증 필요
-                .anyRequest().permitAll() // 그 외의 경로는 모두 허용
-            .and()
-            .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS); // 세션 사용 안 함 (JWT 사용 시)
-
-        return http.build();
-    }
+                .csrf().disable()
+                .formLogin().disable()
+                .httpBasic().disable()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/auth/**").permitAll() // 인증 관련 엔드포인트는 모두 허용
+                        .anyRequest().authenticated() // 그 외의 모든 요청은 인증 필요
+                )
 }
