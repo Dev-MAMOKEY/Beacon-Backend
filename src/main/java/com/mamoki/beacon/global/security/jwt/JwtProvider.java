@@ -13,11 +13,11 @@ public class JwtProvider {
 
     private final JwtUtil jwtUtil;
 
-    public String createAccessToken(Long memberId, Role role, int stdId) {
+    public String createAccessToken(Long memberId, Role role) {
         return Jwts.builder()
                 .subject(String.valueOf(memberId)) // 회원 ID를 문자열로 설정
                 .claim("role", role.name()) // Role 정보를 클레임에 추가
-                .claim("stdId", stdId) // 학번 정보를 클레임에 추가
+                .claim("type", "access") // 토큰 유형을 클레임에 추가
                 .id(UUID.randomUUID().toString()) // 고유한 JWT ID 설정
                 .issuedAt(new Date()) // 발급 시간 설정
                 .expiration(new Date(System.currentTimeMillis() + jwtUtil.getAccessTokenExpMin())) // 만료 시간 설정
@@ -28,6 +28,7 @@ public class JwtProvider {
     public String createRefreshToken(Long memberId) {
         return Jwts.builder()
                 .subject(String.valueOf(memberId)) // 회원 ID를 문자열로 설정
+                .claim("type", "refresh")
                 .id(UUID.randomUUID().toString()) // 고유한 JWT ID 설정
                 .issuedAt(new Date()) // 발급 시간 설정
                 .expiration(new Date(System.currentTimeMillis() + jwtUtil.getRefreshTokenExpDay())) // 만료 시간 설정

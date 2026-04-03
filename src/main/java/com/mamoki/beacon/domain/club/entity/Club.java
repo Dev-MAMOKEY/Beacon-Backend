@@ -20,4 +20,9 @@ public class Club extends GlobalEntity {
 
     @Column(name = "is_deleted")
     private Boolean isDeleted;
+
+    public Club(String clubName, String clubDescription) {
+        this.clubName = clubName;
+        this.clubDescription = clubDescription;
+    }
 }
