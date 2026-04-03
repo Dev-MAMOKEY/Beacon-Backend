@@ -35,14 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
-<<<<<<< HEAD
-
-# 개발/운영 환경 설정 (민감한 정보 포함)
-src/main/resources/application-local.yml
-
-# 환경변수 파일
-.env
-=======
 application.yml
 application-local.yml
->>>>>>> 0f39ac69dfdec742e6bd6e3615fff602bf96b77a
+resource/firebase/beacon-account.json
+src/main/resources/firebase/beacon-account.json
+src/main/resources/firebase/
