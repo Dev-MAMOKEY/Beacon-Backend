@@ -97,10 +97,10 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(String refreshToken) {
-        Member member = memberRepository.findByRefreshToken(refreshToken)
-                .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_REVOKED));
-        member.revokeRefreshToken(); // DB에서 RT 무효화
+    public void logout(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+        member.revokeRefreshToken();
     }
 
     // ClubMember에서 Role 결정: ADMIN이 하나라도 있으면 ADMIN, 없으면 MEMBER

@@ -6,6 +6,7 @@ import com.mamoki.beacon.global.rsdata.RsData;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,8 +38,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<RsData<Void>> logout(@RequestBody String refreshToken) {
-        authService.logout(refreshToken);
+    public ResponseEntity<RsData<Void>> logout(@AuthenticationPrincipal Long memberId) {
+        authService.logout(memberId);
         return ResponseEntity.ok(RsData.success(null));
     }
 }

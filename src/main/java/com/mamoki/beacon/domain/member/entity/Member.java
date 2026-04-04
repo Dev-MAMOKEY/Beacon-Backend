@@ -4,13 +4,9 @@ import com.mamoki.beacon.domain.auth.dto.SignupResponse;
 import com.mamoki.beacon.domain.member.dto.profile.MemberProfileResponse;
 import com.mamoki.beacon.global.entity.GlobalEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDateTime;
 
@@ -37,7 +33,7 @@ public class Member extends GlobalEntity {
     private String fcmToken;
 
     @Column(name = "push_enabled")
-    private Boolean pushEnabled;
+    private Boolean pushEnabled = true;
 
     @Column(name = "refresh_token")
     private String refreshToken;
@@ -50,6 +46,7 @@ public class Member extends GlobalEntity {
         this.password = password;
         this.grade = grade;
         this.name = name;
+        this.pushEnabled = true;
     }
 
     public SignupResponse toSignupResponse() {
