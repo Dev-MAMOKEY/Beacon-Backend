@@ -12,6 +12,8 @@ import com.mamoki.beacon.global.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,17 +32,19 @@ public class DataInitializer {
 
     @Bean
         // 테스트 진행 위해 CommandLineRunner 빈 등록 -> 실행 시 초기 데이터 미리 삽입
+    @Order(1) // 여러 CommandLineRunner가 있을 때 실행 순서 지정, 숫자가 낮을수록 먼저 실행
 
-    CommandLineRunner initMember() { // 회원 초기 데이터 삽입
+    CommandLineRunner initMember(PasswordEncoder passwordEncoder) { // 회원 초기 데이터 삽입
         return args -> {
             if (memberRepository.count() == 0) {
-                memberRepository.save(new Member(20230001, "qwer1234", 1, "사용자"));
-                memberRepository.save(new Member(20239999, "admin1234", 4, "관리자"));
+                memberRepository.save(new Member(20230001, passwordEncoder.encode("qwer1234"), 1, "사용자"));
+                memberRepository.save(new Member(20239999, passwordEncoder.encode("admin1234"), 4, "관리자"));
             }
         };
     }
 
     @Bean
+    @Order(2)
     CommandLineRunner initClub() { // 동아리 초기 데이터 삽입
         return args -> {
             if (clubRepository.count() == 0) {
@@ -51,6 +55,7 @@ public class DataInitializer {
     }
 
     @Bean
+    @Order(3)
     CommandLineRunner initClubMember() { // 회원과 동아리를 조회하여 ClubMember 엔티티 초기 데이터 삽입
         return args -> {
             if (clubMemberRepository.count() == 0) {

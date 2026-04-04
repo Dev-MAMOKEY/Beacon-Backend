@@ -12,6 +12,6 @@ public record MemberProfileUpdateRequest(
                 message = "한글 또는 영문만 입력 가능합니다."
         )
         String name,
-        boolean pushEnabled
+        Boolean pushEnabled
 ) {
 }

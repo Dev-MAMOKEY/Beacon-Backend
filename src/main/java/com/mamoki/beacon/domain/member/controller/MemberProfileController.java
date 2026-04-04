@@ -27,15 +27,14 @@ public class MemberProfileController {
     // @AuthenticationPrincipal Long memberId -> SecurityContext에서 인증된 회원의 ID를 가져오는 어노테이션
 
     @PatchMapping("/me") // 내 정보 수정
-    @ResponseBody
-    public ResponseEntity<RsData<MemberProfileResponse>> updateMyInfo(@AuthenticationPrincipal Long memberId, @Valid MemberProfileUpdateRequest request) {
+    public ResponseEntity<RsData<MemberProfileResponse>> updateMyInfo(@AuthenticationPrincipal Long memberId, @Valid @RequestBody MemberProfileUpdateRequest request) {
         MemberProfileResponse response = memberService.updateProfile(memberId, request);
         return ResponseEntity.ok(RsData.success(response));
     }
 
     @PatchMapping("/me/password") // 내 비밀번호 수정
     @ResponseBody
-    public ResponseEntity<RsData<Void>> updateMyPassword(@AuthenticationPrincipal Long memberId, @Valid MemberPaswordUpdateRequest request) {
+    public ResponseEntity<RsData<Void>> updateMyPassword(@AuthenticationPrincipal Long memberId, @Valid @RequestBody MemberPaswordUpdateRequest request) {
         memberService.updatePassword(memberId, request);
         return ResponseEntity.ok(RsData.success(null));
     }
