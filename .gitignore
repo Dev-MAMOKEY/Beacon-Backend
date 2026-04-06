@@ -35,8 +35,16 @@ out/
 
 ### VS Code ###
 .vscode/
-application.yml
-application-local.yml
-resource/firebase/beacon-account.json
-src/main/resources/firebase/beacon-account.json
+
+### 환경 설정 파일 ###
+.env
+.env.*
+!.env.example
+
+### YML 설정 파일 ###
+src/main/resources/application.yml
+src/main/resources/application-local.yml
+
+### Firebase ###
 src/main/resources/firebase/
+resource/firebase/
