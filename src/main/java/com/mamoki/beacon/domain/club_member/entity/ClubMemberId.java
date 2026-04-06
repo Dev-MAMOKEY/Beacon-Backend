@@ -22,7 +22,7 @@ public class ClubMemberId implements Serializable { // Member, Club의 기본키
         if (this == o) return true;
         if (!(o instanceof ClubMemberId)) return false;
         ClubMemberId that = (ClubMemberId) o;
-        return memberId == that.memberId && clubId == that.clubId;
+        return memberId.equals(that.memberId) && clubId.equals(that.clubId);
     }
 
     @Override
