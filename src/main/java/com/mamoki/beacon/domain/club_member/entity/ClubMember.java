@@ -4,11 +4,13 @@ import com.mamoki.beacon.domain.club.entity.Club;
 import com.mamoki.beacon.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "club_member")
@@ -27,9 +29,18 @@ public class ClubMember {
     @JoinColumn(name = "club_id")
     private Club club;
 
-    @Column(name = "is_admin")
-    private Boolean isAdmin;
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @Column(name = "joined_at")
     private LocalDateTime joinedAt;
+
+    public ClubMember(Member member, Club club, Role role) {
+        this.id = new ClubMemberId();
+        this.member = member;
+        this.club = club;
+        this.role = role;
+        this.joinedAt = LocalDateTime.now();
+    }
 }

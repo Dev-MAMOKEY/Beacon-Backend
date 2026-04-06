@@ -1,6 +1,5 @@
 package com.mamoki.beacon.domain.session.dto;
 
-import com.mamoki.beacon.domain.session.entity.SessionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +12,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SessionDto {
-    private SessionStatus sessionStatus;
     private String sessionName;
+    private String uuid;
     private LocalDateTime startAt;
     private LocalDateTime endAt;
     private Long clubId;
