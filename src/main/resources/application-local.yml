@@ -23,3 +23,7 @@ custom:
     secret-key: ${JWT_SECRET}
     access-exp-min: ${JWT_ACCESS_EXP_MIN:60}
     refresh-exp-day: ${JWT_REFRESH_EXP_DAY:30}
+
+firebase:
+    beacon-account:
+      path: firebase/beacon-account.json
