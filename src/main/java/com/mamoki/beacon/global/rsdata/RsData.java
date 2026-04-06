@@ -9,7 +9,7 @@ public record RsData<T>( // 공통 API 응답 객체
         T data,
         ErrorInfo error,
         LocalDateTime timestamp
-) {
+){
     public record ErrorInfo( // 에러코드에 들어갈 객체
             String code,
             String message
