@@ -21,6 +21,12 @@ public class Club extends GlobalEntity {
     @Column(name = "is_deleted")
     private Boolean isDeleted;
 
+    @Column(name = "fixed_uuid")
+    private String fixedUuid;
+
+    @Column(name = "psk")
+    private String psk;
+
     public Club(String clubName, String clubDescription) {
         this.clubName = clubName;
         this.clubDescription = clubDescription;
