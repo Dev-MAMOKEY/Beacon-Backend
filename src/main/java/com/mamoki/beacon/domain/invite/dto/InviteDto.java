@@ -13,5 +13,5 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class InviteDto {
     private String inviteCode;
-    private LocalDateTime revokedAt;
+    private Long clubId;
 }
