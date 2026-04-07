@@ -4,10 +4,12 @@ import com.mamoki.beacon.global.entity.GlobalEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
+@Getter
+@Builder
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "club")
@@ -21,8 +23,7 @@ public class Club extends GlobalEntity {
     @Column(name = "is_deleted")
     private Boolean isDeleted;
 
-    public Club(String clubName, String clubDescription) {
-        this.clubName = clubName;
-        this.clubDescription = clubDescription;
-    }
+    private String fixed_uuid;
+
+    private String psk;
 }
