@@ -1,6 +1,7 @@
 package com.mamoki.beacon.domain.club.service;
 
 import com.mamoki.beacon.domain.club.dto.ClubDto;
+import com.mamoki.beacon.domain.club.dto.ClubCreateResponseDto;
 import com.mamoki.beacon.domain.club.dto.ClubResponseDto;
 import com.mamoki.beacon.domain.club.entity.Club;
 import com.mamoki.beacon.domain.club.repository.ClubRepository;
@@ -24,7 +25,7 @@ public class ClubService {
     private final ClubMemberRepository clubMemberRepository;
 
     @Transactional //동아리 생성 함수
-    public String createClub(Long memberId, ClubDto clubDto) {
+    public ClubCreateResponseDto createClub(Long memberId, ClubDto clubDto) {
         String fixedUuid = UUID.randomUUID().toString().replace("-", "");
 
         Member member = memberRepository.findById(memberId)
@@ -41,7 +42,7 @@ public class ClubService {
         ClubMember clubMember = new ClubMember(member, club, Role.ADMIN);
         clubMemberRepository.save(clubMember);
 
-        return fixedUuid;
+        return new ClubCreateResponseDto(club.getId(), fixedUuid);
     }
 
     @Transactional

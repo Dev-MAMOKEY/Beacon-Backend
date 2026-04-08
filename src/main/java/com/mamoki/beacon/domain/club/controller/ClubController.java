@@ -1,5 +1,6 @@
 package com.mamoki.beacon.domain.club.controller;
 
+import com.mamoki.beacon.domain.club.dto.ClubCreateResponseDto;
 import com.mamoki.beacon.domain.club.dto.ClubDto;
 import com.mamoki.beacon.domain.club.dto.ClubResponseDto;
 import com.mamoki.beacon.domain.club.service.ClubService;
@@ -16,9 +17,9 @@ public class ClubController {
     private final ClubService clubService;
 
     @PostMapping("/create") //동아리 생성 로직
-    public ResponseEntity<RsData<String>> createClub(@AuthenticationPrincipal Long memberId, @RequestBody ClubDto clubDto) {
-        String fixedUuid = clubService.createClub(memberId, clubDto);
-        return ResponseEntity.ok().body(RsData.success(fixedUuid));
+    public ResponseEntity<RsData<ClubCreateResponseDto>> createClub(@AuthenticationPrincipal Long memberId, @RequestBody ClubDto clubDto) {
+        ClubCreateResponseDto response = clubService.createClub(memberId, clubDto);
+        return ResponseEntity.ok().body(RsData.success(response));
     }
 
     @PatchMapping("/{clubId}")

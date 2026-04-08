@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @SuperBuilder
+@EntityListeners(GlobalEntityListener.class)
 public class GlobalEntity {
 
     @Id@GeneratedValue(strategy = GenerationType.IDENTITY)
