@@ -5,17 +5,16 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 public class TotpUtil {
-    private static final long PERIOD = 86400L; // 24시간 (초 단위)
     private static final String CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final int DIGITS = 6;
 
     public static String generateTotp(String psk) throws Exception {
 
-        long counter = Instant.now().getEpochSecond() / PERIOD; //시간별로 초대코드 바꾸기 위해
-
+        long counter = LocalDate.now(ZoneId.of("Asia/Seoul")).toEpochDay();// 현재날짜 기준으로 생성하기 위해 설정 금일 00시부터 23시 59분 59초까지 유효코드
         byte[] data = ByteBuffer.allocate(8).putLong(counter).array(); //HMAC을 쓰기위해 8 크기의 배열로 선언함 (Long은 8바이트라 8로 선언)
 
         Mac mac = Mac.getInstance("HmacSHA256"); //해시256으로 MAC생성하는걸로 암
