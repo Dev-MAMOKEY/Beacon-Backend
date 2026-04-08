@@ -37,7 +37,7 @@ public class ClubMember {
     private LocalDateTime joinedAt;
 
     public ClubMember(Member member, Club club, Role role) {
-        this.id = new ClubMemberId();
+        this.id = new ClubMemberId(member.getId(), club.getId());
         this.member = member;
         this.club = club;
         this.role = role;
