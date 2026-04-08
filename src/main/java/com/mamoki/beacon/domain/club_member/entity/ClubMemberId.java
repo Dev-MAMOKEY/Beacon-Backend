@@ -16,17 +16,4 @@ public class ClubMemberId implements Serializable { // Member, Club의 기본키
 
     private Long memberId;
     private Long clubId;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ClubMemberId)) return false;
-        ClubMemberId that = (ClubMemberId) o;
-        return memberId == that.memberId && clubId == that.clubId;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(memberId, clubId);
-    }
 }

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -45,14 +46,25 @@ public class DataInitializer {
 
     @Bean
     @Order(2)
-    CommandLineRunner initClub() { // 동아리 초기 데이터 삽입
+    CommandLineRunner initClub() {
         return args -> {
             if (clubRepository.count() == 0) {
-                clubRepository.save(new Club("마모키", "신한대 소프트웨어융합학과 IT 동아리입니다."));
-                clubRepository.save(new Club("키모마", "테스트를 위한 동아리입니다."));
+                clubRepository.save(Club.builder()
+                        .clubName("마모키")
+                        .clubDescription("신한대 소프트웨어융합학과 IT 동아리입니다.")
+                        .psk(UUID.randomUUID().toString().replace("-", ""))
+                        .fixed_uuid(UUID.randomUUID().toString().replace("-", ""))
+                        .build());
+                clubRepository.save(Club.builder()
+                        .clubName("키모마")
+                        .clubDescription("테스트를 위한 동아리입니다.")
+                        .psk(UUID.randomUUID().toString().replace("-", ""))
+                        .fixed_uuid(UUID.randomUUID().toString().replace("-", ""))
+                        .build());
             }
         };
     }
+
 
     @Bean
     @Order(3)
