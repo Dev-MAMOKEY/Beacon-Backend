@@ -29,11 +29,11 @@ public class ClubMemberService {
 
         // 2. 요청자가 해당 동아리에 가입이 되어있는지 확인
         ClubMember requestMember = clubMemberRepository.findByMemberIdAndClubId(request.requesterId(), request.clubId())
-                .orElseThrow(() -> new IllegalArgumentException("요청자가 해당 동아리에 가입되어 있지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
 
         // 3. 요청자가 ADMIN 권한인지 확인
         if (requestMember.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("동아리 관리자만 수행할 수 있습니다");
+            throw new CustomException(ErrorCode.CLUB_ADMIN_REQUIRED);
         }
 
         // 4. 변경 대상 회원이 존재하는지 확인
@@ -42,7 +42,7 @@ public class ClubMemberService {
 
         // 5. 변경 대상 회원이 해당 동아리에 가입 되어 있는지
         ClubMember targetMember = clubMemberRepository.findByMemberIdAndClubId(request.targetMemberId(), request.clubId())
-                .orElseThrow(() -> new IllegalArgumentException("변경 대상이 해당 동아리에 가입되어 있지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
 
         // 6. 요청자가 본인의 역할을 변경하려고 할 시
         if (request.requesterId().equals(request.targetMemberId())) {
