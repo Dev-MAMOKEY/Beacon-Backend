@@ -10,10 +10,8 @@ import java.util.Optional;
 
 public interface ClubMemberRepository extends JpaRepository<ClubMember, ClubMemberId> {
 
-    // 특정 회원이 가입한 모든 ClubMember 조회 (Role 결정에 사용)
-    List<ClubMember> findByMember(Member member);
     Optional<ClubMember> findByMemberIdAndClubId(Long memberId, Long clubId);
 
-    // 역할 변경시 사용자 동아리와 번호를 조회 (없을 경우 예외처리)
-    Optional<ClubMember> findByClubIdAndMemberId(Long clubId, Long memberId);
+    // 멤버 목록 조회 (soft_deleted 지정된 멤버는 제외)
+    List<ClubMember> findByClubIdAndDeletedAtIsNull(Long clubId);
 }

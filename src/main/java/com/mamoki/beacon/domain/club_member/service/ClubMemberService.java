@@ -19,6 +19,9 @@ public class ClubMemberService {
     private final ClubMemberRepository clubMemberRepository;
     private final MemberRepository memberRepository;
 
+    // 멤버 목록 조회
+    public void getMemberList
+
     // 회원 역할 변경 로직
     @Transactional
     public void updateMemberRole(RoleUpdateRequest request) {
