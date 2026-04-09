@@ -43,4 +43,9 @@ public class ClubMember {
         this.role = role;
         this.joinedAt = LocalDateTime.now();
     }
+
+    // 역할 변경을 위한 메서드
+    public void updateRole(Role newRole) {
+        this.role = newRole;
+    }
 }
