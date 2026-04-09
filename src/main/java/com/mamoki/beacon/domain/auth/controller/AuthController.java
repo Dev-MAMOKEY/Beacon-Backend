@@ -22,7 +22,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<RsData<SignupResponse>> signup(@Valid @RequestBody SignupRequest request) {
         SignupResponse response = authService.signup(request);
-        return ResponseEntity.ok(RsData.success(response));
+        return ResponseEntity.ok(RsData.created(response));
     }
 
     @PostMapping("/login")

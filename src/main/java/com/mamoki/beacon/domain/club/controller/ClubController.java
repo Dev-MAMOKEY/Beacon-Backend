@@ -19,7 +19,7 @@ public class ClubController {
     @PostMapping("/create") //동아리 생성 로직
     public ResponseEntity<RsData<ClubCreateResponseDto>> createClub(@AuthenticationPrincipal Long memberId, @RequestBody ClubDto clubDto) {
         ClubCreateResponseDto response = clubService.createClub(memberId, clubDto);
-        return ResponseEntity.ok().body(RsData.success(response));
+        return ResponseEntity.ok().body(RsData.created(response));
     }
 
     @PatchMapping("/{clubId}")

@@ -1,5 +1,6 @@
 package com.mamoki.beacon.global.exception;
 
+import com.google.api.Http;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
@@ -16,9 +17,12 @@ public enum ErrorCode {
     // 권한 에러 (403)
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "해당 리소스에 대한 권한이 없습니다."),
     NOT_CLUB_MEMBER(HttpStatus.FORBIDDEN, "NOT_CLUB_MEMBER", "해당 동아리의 멤버가 아닙니다."),
+    CLUB_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "CLUB_ADMIN_REQUIRED", "동아리 관리자만 수행할 수 있습니다."),
 
-    // 회원 및 동아리 관련 예외 (400, 409)
+    // 회원 및 동아리 관련 예외 (400, 404, 409)
     INVALID_INVITE_CODE(HttpStatus.BAD_REQUEST, "INVALID_INVITE_CODE", "초대코드가 존재하지 않거나 유효하지 않습니다."),
+    CLUB_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "CLUB_ALREADY_DELETED", "삭제된 동아리입니다."),
+    CLUB_NOT_FOUND(HttpStatus.NOT_FOUND, "CLUB_NOT_FOUND", "동아리가 존재하지 않습니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_NOT_FOUND", "해당 회원이 존재하지 않습니다."),
     DUPLICATE_STUDENT_ID(HttpStatus.CONFLICT, "DUPLICATE_STUDENT_ID", "이미 사용중인 학번입니다."),
     ALREADY_CLUB_MEMBER(HttpStatus.CONFLICT, "ALREADY_CLUB_MEMBER", "이미 해당 동아리의 멤버입니다."),
