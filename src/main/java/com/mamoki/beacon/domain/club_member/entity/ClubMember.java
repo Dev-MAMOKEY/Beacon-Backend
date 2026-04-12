@@ -2,19 +2,22 @@ package com.mamoki.beacon.domain.club_member.entity;
 
 import com.mamoki.beacon.domain.club.entity.Club;
 import com.mamoki.beacon.domain.member.entity.Member;
+import com.mamoki.beacon.global.entity.GlobalEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "club_member")
-public class ClubMember {
+public class ClubMember extends GlobalEntity { // GlobalEntity를 상속해서 softDelete() 메서드 사용하기 위함
 
     @EmbeddedId
     private ClubMemberId id;

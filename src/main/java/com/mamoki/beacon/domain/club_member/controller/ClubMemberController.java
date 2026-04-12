@@ -1,17 +1,36 @@
 package com.mamoki.beacon.domain.club_member.controller;
 
+import com.mamoki.beacon.domain.club_member.dto.RoleUpdateRequest;
+import com.mamoki.beacon.domain.club_member.entity.Role;
 import com.mamoki.beacon.domain.club_member.service.ClubMemberService;
+import com.mamoki.beacon.global.rsdata.RsData;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/clubs")
 @RequiredArgsConstructor
 public class ClubMemberController {
 
-    private ClubMemberService clubMemberService;
+    private final ClubMemberService clubMemberService;
 
     @GetMapping("/{clubId}/members")
-    public ResponseEntity<>
+    public ResponseEntity<RsData> getClubMembers(@PathVariable Long clubId, @RequestParam Long requesterId) {
+        return ResponseEntity.ok().body(RsData.success(clubMemberService.getClubMembers(requesterId, clubId)));
+    }
+
+    @PatchMapping("/{clubId}/members/{memberId}/role")
+    public ResponseEntity<RsData> updateRole(@PathVariable Long clubId, @PathVariable Long memberId, RoleUpdateRequest request) {
+        request = new RoleUpdateRequest(request.requesterId(), clubId, memberId, request.newRole());
+        clubMemberService.updateRole(request);
+        return ResponseEntity.ok().body(RsData.success(null));
+    }
+
+    @DeleteMapping("/{clubId}/members/{memberId}")
+    public ResponseEntity<RsData> softdeletedMember(@PathVariable Long clubId, @PathVariable Long memberId, @RequestParam Long requesterId) {
+        clubMemberService.softdeletedMember(requesterId, clubId, memberId);
+        return ResponseEntity.ok().body(RsData.success(null));
+    }
 }
+
