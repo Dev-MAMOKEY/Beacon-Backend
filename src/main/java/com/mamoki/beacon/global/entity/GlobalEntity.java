@@ -30,4 +30,8 @@ public class GlobalEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public void softDelete() { // 멤버 제명(소프트 딜리트) 위한 메서드
+        this.deletedAt = LocalDateTime.now();
+    }
 }
