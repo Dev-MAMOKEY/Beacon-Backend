@@ -21,11 +21,6 @@ public record RsData<T>( // 공통 API 응답 객체
         return new RsData<>(true, data, null, LocalDateTime.now());
     }
 
-    // 성공 응답 (201)
-    public static <T> RsData<T> created(T data) {
-        return new RsData<>(true,data, null, LocalDateTime.now());
-    }
-
     // 실패 응답
     public static <T> RsData<T> fail(ErrorCode errorCode) {
         return new RsData<>(false, null, new ErrorInfo(errorCode.getCode(), errorCode.getMessage()), LocalDateTime.now());
