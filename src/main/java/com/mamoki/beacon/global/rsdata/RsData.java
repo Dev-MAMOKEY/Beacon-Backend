@@ -16,7 +16,7 @@ public record RsData<T>( // 공통 API 응답 객체
     ) {
     }
 
-    // 성공 응답
+    // 성공 응답 (200)
     public static <T> RsData<T> success(T data) {
         return new RsData<>(true, data, null, LocalDateTime.now());
     }
