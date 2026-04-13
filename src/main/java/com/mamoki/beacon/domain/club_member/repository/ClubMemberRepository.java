@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ClubMemberRepository extends JpaRepository<ClubMember, ClubMemberId> {
-
     // 특정 회원이 가입한 모든 ClubMember 조회 (Role 결정에 사용)
     List<ClubMember> findByMember(Member member);
     Optional<ClubMember> findByMemberIdAndClubId(Long memberId, Long clubId);
+
 }
