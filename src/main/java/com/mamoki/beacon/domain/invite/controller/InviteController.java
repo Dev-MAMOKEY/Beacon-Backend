@@ -19,7 +19,7 @@ public class InviteController {
     @GetMapping("/{clubId}")
     public ResponseEntity<RsData<InviteResponseDto>> getInviteCode(
             @AuthenticationPrincipal Long memberId,
-            @PathVariable Long clubId) throws Exception {
+            @PathVariable("clubId") Long clubId) throws Exception {
 
         String code = inviteService.requestInviteCode(memberId, clubId);
         return ResponseEntity.ok(RsData.success(new InviteResponseDto(code)));
@@ -29,7 +29,7 @@ public class InviteController {
     @PostMapping("/{clubId}/join")
     public ResponseEntity<RsData<Void>> joinClub(
             @AuthenticationPrincipal Long memberId,
-            @PathVariable Long clubId,
+            @PathVariable("clubId") Long clubId,
             @RequestBody InviteRequestDto request) throws Exception {
 
         inviteService.responseInviteCode(memberId, clubId, request.inviteCode());

@@ -1,14 +1,12 @@
 package com.mamoki.beacon.domain.club_member.repository;
 
 import com.mamoki.beacon.domain.club_member.entity.ClubMember;
-import com.mamoki.beacon.domain.club_member.entity.ClubMemberId;
-import com.mamoki.beacon.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface ClubMemberRepository extends JpaRepository<ClubMember, ClubMemberId> {
+public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
 
     Optional<ClubMember> findByMemberIdAndClubId(Long memberId, Long clubId);
 
