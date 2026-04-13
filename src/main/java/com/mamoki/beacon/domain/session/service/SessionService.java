@@ -1,6 +1,7 @@
 package com.mamoki.beacon.domain.session.service;
 
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
+import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
 import com.mamoki.beacon.domain.club.entity.Club;
 import com.mamoki.beacon.domain.club.repository.ClubRepository;
@@ -120,10 +121,24 @@ public class SessionService {
 
         // 출석 기록 없는 멤버 ABSENT 자동 생성
         List<ClubMember> clubMembers = clubMemberRepository.findByClubId(session.getClub().getId());
+
+        //set을 쓰는 이유 Set은 해시값이라 이미 위치가 지정되어있어서 순차적으로 확인하지않고 바로 접근가능 List -> 배열식으로 되어있어서 순차적으로 접근 (결론: 빠름)
         Set<Long> attendedMemberIds = attendanceRepository.findBySession(session)
                 .stream()
-                .map(a -> a.getMember().getId())
-                .collect(Collectors.toSet());
+                .map(a -> a.getMember().getId()) //Attendance 객체에서 memberId값 추출하고
+                .collect(Collectors.toSet()); //set으로 정렬
+
+        List<Attendance> absentList = clubMembers.stream()
+                .filter(cm -> !attendedMemberIds.contains(cm.getMember().getId())) //결석만 필터
+                .map(cm -> Attendance.builder() //결석한 멤버 뽑아서 ABSENT
+                        .member(cm.getMember())
+                        .session(session)
+                        .attendanceStatus(AttendanceStatus.ABSENT)
+                        .isManual(false)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build())
+                .collect(Collectors.toList());
 
         sessionRepository.save(session);
     }
