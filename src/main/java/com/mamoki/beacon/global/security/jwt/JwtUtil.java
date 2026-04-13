@@ -42,10 +42,6 @@ public class JwtUtil {
         return Long.parseLong(parseClaims(token).getSubject());
     }
 
-    public Role getRole(String token) { // ENUM 타입 Role 값 추출 메서드
-        return Role.valueOf(parseClaims(token).get("role", String.class));
-    }
-
     public SecretKey getSecretKey() {
         return secretKey;
     }
