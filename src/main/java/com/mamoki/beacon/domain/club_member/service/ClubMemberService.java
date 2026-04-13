@@ -56,12 +56,13 @@ public class ClubMemberService {
     }
 
     // 역할 변경
+    @Transactional
     public void updateRole(RoleUpdateRequest request) {
         validateAdmin(request.requesterId(), request.clubId());
 
         // 자기 자신 역할은 수정할 수 없음
-        if (request.requesterId() == request.targetMemberId()) {
-            throw new CustomException(ErrorCode.CANNOT_MODIFY_OWN_ROLE);
+        if (request.requesterId().equals(request.targetMemberId())) {
+            throw new CustomException(ErrorCode.CANNOT_UPDATE_OWN_ROLE);
         }
 
         // 수정 대상이 해당 동아리에 가입되어 있는지 여부 확인
@@ -72,6 +73,7 @@ public class ClubMemberService {
     }
 
     // 멤버 제명
+    @Transactional
     public void softdeletedMember(Long requesterId, Long clubId, Long targetMemberId) {
         validateAdmin(requesterId, clubId);
 
