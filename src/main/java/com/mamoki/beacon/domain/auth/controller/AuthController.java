@@ -5,6 +5,7 @@ import com.mamoki.beacon.domain.auth.service.AuthService;
 import com.mamoki.beacon.global.rsdata.RsData;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +23,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<RsData<SignupResponse>> signup(@Valid @RequestBody SignupRequest request) {
         SignupResponse response = authService.signup(request);
-        return ResponseEntity.ok(RsData.created(response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(RsData.success(response));
     }
 
     @PostMapping("/login")
