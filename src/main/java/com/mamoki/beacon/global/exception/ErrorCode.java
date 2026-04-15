@@ -30,6 +30,7 @@ public enum ErrorCode {
     SESSION_ALREADY_ENDED(HttpStatus.BAD_REQUEST, "SESSION_ALREADY_ENDED", "종료된 세션은 수정할 수 없습니다."),
     NOT_FOUND_CLUB(HttpStatus.NOT_FOUND, "NOT_FOUND_CLUB", "해당 동아리가 존재하지 않습니다."),
     NOT_DELETED_SESSION(HttpStatus.BAD_REQUEST, "NOT_DELETED_SESSION", "활동중이라 삭제할 수 없는 세션입니다."),
+    OTP_GENERATION_FAILED(HttpStatus.BAD_REQUEST, "OTP_GENERATION_FAILED", "출석 코드 생성에 실패했습니다."),
 
     // 출석 관련 예외 (400, 409)
     INVALID_ATTENDANCE_CODE(HttpStatus.BAD_REQUEST, "INVALID_ATTENDANCE_CODE", "출석 코드가 올바르지 않습니다."),

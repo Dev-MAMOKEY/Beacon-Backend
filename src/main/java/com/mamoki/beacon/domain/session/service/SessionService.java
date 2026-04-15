@@ -10,11 +10,13 @@ import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
 import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
 import com.mamoki.beacon.domain.session.dto.SessionDto;
+import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
 import com.mamoki.beacon.domain.session.entity.SessionStatus;
 import com.mamoki.beacon.domain.session.repository.SessionRepository;
 import com.mamoki.beacon.global.exception.CustomException;
 import com.mamoki.beacon.global.exception.ErrorCode;
+import com.mamoki.beacon.global.util.TotpUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
@@ -36,7 +38,7 @@ public class SessionService {
     private final ClubMemberRepository clubMemberRepository;
 
     @Transactional
-    public String createSession(Long memberId, SessionDto sessionDto){
+    public String createSession(Long memberId, SessionDto sessionDto) {
         if (sessionRepository.existsByClubIdAndSessionStatusAndDeletedAtIsNull(
                 sessionDto.getClubId(), SessionStatus.ACTIVED)) {
             throw new CustomException(ErrorCode.SESSION_ALREADY_ACTIVE);
@@ -52,8 +54,8 @@ public class SessionService {
                 .sessionStatus(SessionStatus.SCHEDULED)
                 .sessionName(sessionDto.getSessionName())
                 .uuid(sessionUuid)
-                .startAt(sessionDto.getStartAt())
-                .endAt(sessionDto.getEndAt())
+                .exceptStartAt(sessionDto.getExceptStartAt())
+                .exceptEndAt(sessionDto.getExceptEndAt())
                 .member(member)
                 .club(club)
                 .build();
@@ -63,9 +65,9 @@ public class SessionService {
 
     //softDelete 시간 업데이트
     @Transactional
-    public void softDeletedSession(Long sessionId){
-        Session session = sessionRepository.findById(sessionId).orElseThrow(()-> new CustomException(ErrorCode.SESSION_NOT_FOUND));
-        if(session.getSessionStatus() == SessionStatus.ACTIVED){
+    public void softDeletedSession(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId).orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+        if (session.getSessionStatus() == SessionStatus.ACTIVED) {
             throw new CustomException(ErrorCode.NOT_DELETED_SESSION);
         }
         // 연결된 attendance 소프트 삭제
@@ -79,24 +81,21 @@ public class SessionService {
 
     //session 업데이트 (입력 안한건 업데이트 안함), 주 목적은 세션 상태를 위한 함수
     @Transactional
-    public void updatedSession(Long sessionId, SessionDto sessionDto){
+    public void updatedSession(Long sessionId, SessionDto sessionDto) {
         Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(()-> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
         if (session.getSessionStatus() == SessionStatus.ENDED) {
             throw new CustomException(ErrorCode.SESSION_ALREADY_ENDED);
         }
 
-        if(sessionDto.getSessionName() != null){
+        if (sessionDto.getSessionName() != null) {
             session.setSessionName(sessionDto.getSessionName());
         }
-        if(sessionDto.getStartAt() != null){
-            session.setStartAt(sessionDto.getStartAt());
+        if (sessionDto.getExceptStartAt() != null) {
+            session.setExceptStartAt(sessionDto.getExceptStartAt());
         }
-        if(sessionDto.getEndAt() != null){
-            session.setEndAt(sessionDto.getEndAt());
-        }
-        if(sessionDto.getSessionStatus() != null){
-            session.setSessionStatus(sessionDto.getSessionStatus());
+        if (sessionDto.getExceptEndAt() != null) {
+            session.setExceptEndAt(sessionDto.getExceptEndAt());
         }
 
         sessionRepository.save(session);
@@ -104,11 +103,22 @@ public class SessionService {
 
     //session시작하고 ACTIVED로 변경하기 위한 세션시작 함수
     @Transactional
-    public void startedSession(Long sessionId){
+    public SessionStartDto startedSession(Long sessionId) {
         Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(()-> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+
+        String otpCode;
+        try {
+            otpCode = TotpUtil.generateSessionOtp(session.getUuid());
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.OTP_GENERATION_FAILED);
+        }
+
         session.setSessionStatus(SessionStatus.ACTIVED);
+        session.setStartAt(LocalDateTime.now());
         sessionRepository.save(session);
+
+        return new SessionStartDto(otpCode, session.getUuid());
     }
 
     //session 종료하기 위한 함수
@@ -140,6 +150,7 @@ public class SessionService {
                         .build())
                 .collect(Collectors.toList());
 
+        attendanceRepository.saveAll(absentList);
         sessionRepository.save(session);
     }
 
@@ -148,5 +159,4 @@ public class SessionService {
         return sessionRepository.findByClubId(clubId, pageable);
     }
 
-    //TOTP 인증 코드 세션 테이블에 해시값으로 저장?
 }

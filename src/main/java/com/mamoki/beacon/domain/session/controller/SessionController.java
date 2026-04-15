@@ -2,6 +2,7 @@ package com.mamoki.beacon.domain.session.controller;
 
 import com.mamoki.beacon.domain.session.dto.SessionDto;
 import com.mamoki.beacon.domain.session.entity.Session;
+import com.mamoki.beacon.domain.session.service.SessionService;
 import com.mamoki.beacon.global.rsdata.RsData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
