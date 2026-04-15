@@ -18,4 +18,6 @@ public class SessionDto {
     private LocalDateTime endAt;
     private Long clubId;
     private SessionStatus sessionStatus;
+    private LocalDateTime exceptStartAt;
+    private LocalDateTime exceptEndAt;
 }
