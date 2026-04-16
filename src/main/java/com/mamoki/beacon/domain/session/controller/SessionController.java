@@ -1,7 +1,9 @@
 package com.mamoki.beacon.domain.session.controller;
 
 import com.mamoki.beacon.domain.session.dto.SessionDto;
+import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
+import com.mamoki.beacon.domain.session.entity.SessionStatus;
 import com.mamoki.beacon.domain.session.service.SessionService;
 import com.mamoki.beacon.global.rsdata.RsData;
 import lombok.RequiredArgsConstructor;
@@ -25,33 +27,33 @@ public class SessionController {
     }
 
     @PatchMapping("/soft-delete/{sessionId}") //세션 소프트 삭제 api
-    public ResponseEntity<RsData<String>> softDeletedSession(@PathVariable Long sessionId) {
-        sessionService.softDeletedSession(sessionId);
+    public ResponseEntity<RsData<String>> softDeletedSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId) {
+        sessionService.softDeletedSession(memberId, sessionId);
         return ResponseEntity.ok().body(RsData.success("세션이 소프트 삭제되었습니다."));
     }
 
     @PatchMapping("/update/{sessionId}") // 세션 수정 api
-    public ResponseEntity<RsData<String>> updatedSession(@PathVariable Long sessionId, @RequestBody SessionDto sessionDto) {
-        sessionService.updatedSession(sessionId, sessionDto);
+    public ResponseEntity<RsData<String>> updatedSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId, @RequestBody SessionDto sessionDto) {
+        sessionService.updatedSession(memberId, sessionId, sessionDto);
         return ResponseEntity.ok().body(RsData.success("세션이 업데이트되었습니다."));
     }
 
-    @PatchMapping("/start/{sessionId}") // 세션 시작 api
-    public ResponseEntity<RsData<String>> startSession(@PathVariable Long sessionId) {
-        sessionService.startedSession(sessionId);
-        return ResponseEntity.ok().body(RsData.success("세션이 시작되었습니다."));
+    @PatchMapping("/start/{sessionId}")
+    public ResponseEntity<RsData<SessionStartDto>> startSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId) { //세션시작 api
+        SessionStartDto result = sessionService.startedSession(memberId, sessionId);
+        return ResponseEntity.ok().body(RsData.success(result));
     }
 
     @PatchMapping("/ended/{sessionId}") // 세션 종료 api
-    public ResponseEntity<RsData<String>> endedSession(@PathVariable Long sessionId) {
-        sessionService.endedSession(sessionId);
+    public ResponseEntity<RsData<String>> endedSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId) {
+        sessionService.endedSession(memberId, sessionId);
         return ResponseEntity.ok().body(RsData.success("세션이 종료되었습니다."));
     }
 
     @GetMapping("/list/{clubId}") //세션 조회 api
-    public ResponseEntity<RsData<Slice<Session>>> getSessionsByClubId(@PathVariable Long clubId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<RsData<Slice<Session>>> getSessionsByClubId(@PathVariable Long clubId, @RequestParam(required = false) SessionStatus status, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Slice<Session> sessions = sessionService.getSessionsByClub(clubId, pageable);
+        Slice<Session> sessions = sessionService.getSessionsByClub(clubId, status, pageable);
         return ResponseEntity.ok().body(RsData.success(sessions));
     }
 }
