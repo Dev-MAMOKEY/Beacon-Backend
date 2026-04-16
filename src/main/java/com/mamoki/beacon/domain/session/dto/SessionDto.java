@@ -17,6 +17,7 @@ public class SessionDto {
     private LocalDateTime startAt;
     private LocalDateTime endAt;
     private Long clubId;
+    private String attendanceCode;
     private SessionStatus sessionStatus;
     private LocalDateTime exceptStartAt;
     private LocalDateTime exceptEndAt;

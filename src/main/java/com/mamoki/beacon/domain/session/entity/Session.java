@@ -5,13 +5,14 @@ import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.global.entity.GlobalEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "session")
@@ -33,6 +34,9 @@ public class Session extends GlobalEntity {
 
     @Column(name = "session_uuid")
     private String uuid;
+
+    @Column(name = "attendance_otp")
+    private String otpCode;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
