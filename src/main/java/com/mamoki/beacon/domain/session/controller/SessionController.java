@@ -1,5 +1,6 @@
 package com.mamoki.beacon.domain.session.controller;
 
+import com.mamoki.beacon.domain.session.dto.SessionCreateDto;
 import com.mamoki.beacon.domain.session.dto.SessionDto;
 import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
@@ -10,50 +11,97 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping ("/api/v1/session")
+@RequestMapping("/api/v1/clubs/{clubId}/sessions")
 @RequiredArgsConstructor
 public class SessionController {
     private final SessionService sessionService;
 
-    @PostMapping("/create") //세션 생성 api
-    public ResponseEntity<RsData<String>> createSession(@AuthenticationPrincipal Long memberId, @RequestBody SessionDto sessionDto) {
-        String uuid = sessionService.createSession(memberId, sessionDto);
-        return ResponseEntity.ok().body(RsData.success(uuid));
+    // 세션 생성 (ADMIN)
+    @PostMapping
+    public ResponseEntity<RsData<SessionCreateDto>> createSession(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId,
+            @RequestBody SessionDto sessionDto) {
+        SessionCreateDto result = sessionService.createSession(memberId, clubId, sessionDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(RsData.success(result));
     }
 
-    @PatchMapping("/soft-delete/{sessionId}") //세션 소프트 삭제 api
-    public ResponseEntity<RsData<String>> softDeletedSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId) {
-        sessionService.softDeletedSession(memberId, sessionId);
-        return ResponseEntity.ok().body(RsData.success("세션이 소프트 삭제되었습니다."));
+    // 세션 목록 조회 (MEMBER)
+    @GetMapping
+    public ResponseEntity<RsData<Slice<Session>>> getSessions(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId,
+            @RequestParam(required = false) SessionStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Slice<Session> sessions = sessionService.getSessionsByClub(clubId, status, pageable);
+        return ResponseEntity.ok().body(RsData.success(sessions));
     }
 
-    @PatchMapping("/update/{sessionId}") // 세션 수정 api
-    public ResponseEntity<RsData<String>> updatedSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId, @RequestBody SessionDto sessionDto) {
+    // 활성 세션 조회 (MEMBER)
+    @GetMapping("/active")
+    public ResponseEntity<RsData<Session>> getActiveSession(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId) {
+        Session session = sessionService.getActiveSession(memberId, clubId);
+        return ResponseEntity.ok().body(RsData.success(session));
+    }
+
+    // 세션 상세 조회 (MEMBER)
+    @GetMapping("/{sessionId}")
+    public ResponseEntity<RsData<Session>> getSession(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId,
+            @PathVariable Long sessionId) {
+        Session session = sessionService.getSessionDetail(memberId, clubId, sessionId);
+        return ResponseEntity.ok().body(RsData.success(session));
+    }
+
+    // 세션 수정 (ADMIN)
+    @PatchMapping("/{sessionId}")
+    public ResponseEntity<RsData<String>> updatedSession(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId,
+            @PathVariable Long sessionId,
+            @RequestBody SessionDto sessionDto) {
         sessionService.updatedSession(memberId, sessionId, sessionDto);
         return ResponseEntity.ok().body(RsData.success("세션이 업데이트되었습니다."));
     }
 
-    @PatchMapping("/start/{sessionId}")
-    public ResponseEntity<RsData<SessionStartDto>> startSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId) { //세션시작 api
+    // 세션 삭제 (ADMIN)
+    @DeleteMapping("/{sessionId}")
+    public ResponseEntity<RsData<String>> softDeletedSession(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId,
+            @PathVariable Long sessionId) {
+        sessionService.softDeletedSession(memberId, sessionId);
+        return ResponseEntity.ok().body(RsData.success("세션이 삭제되었습니다."));
+    }
+
+    // 세션 시작 (ADMIN)
+    @PostMapping("/{sessionId}/start")
+    public ResponseEntity<RsData<SessionStartDto>> startSession(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId,
+            @PathVariable Long sessionId) {
         SessionStartDto result = sessionService.startedSession(memberId, sessionId);
         return ResponseEntity.ok().body(RsData.success(result));
     }
 
-    @PatchMapping("/ended/{sessionId}") // 세션 종료 api
-    public ResponseEntity<RsData<String>> endedSession(@AuthenticationPrincipal Long memberId, @PathVariable Long sessionId) {
+    // 세션 종료 (ADMIN)
+    @PostMapping("/{sessionId}/end")
+    public ResponseEntity<RsData<String>> endedSession(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long clubId,
+            @PathVariable Long sessionId) {
         sessionService.endedSession(memberId, sessionId);
         return ResponseEntity.ok().body(RsData.success("세션이 종료되었습니다."));
-    }
-
-    @GetMapping("/list/{clubId}") //세션 조회 api
-    public ResponseEntity<RsData<Slice<Session>>> getSessionsByClubId(@PathVariable Long clubId, @RequestParam(required = false) SessionStatus status, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Slice<Session> sessions = sessionService.getSessionsByClub(clubId, status, pageable);
-        return ResponseEntity.ok().body(RsData.success(sessions));
     }
 }

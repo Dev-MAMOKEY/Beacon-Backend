@@ -10,6 +10,7 @@ import com.mamoki.beacon.domain.club_member.entity.Role;
 import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
 import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
+import com.mamoki.beacon.domain.session.dto.SessionCreateDto;
 import com.mamoki.beacon.domain.session.dto.SessionDto;
 import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
@@ -41,19 +42,18 @@ public class SessionService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public String createSession(Long memberId, SessionDto sessionDto) {
+    public SessionCreateDto createSession(Long memberId, Long clubId, SessionDto sessionDto) {
 
-        ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, sessionDto.getClubId())
+        ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
         if (clubMember.getRole() != Role.ADMIN) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
-        if (sessionRepository.existsByClubIdAndSessionStatusAndDeletedAtIsNull(
-                sessionDto.getClubId(), SessionStatus.ACTIVED)) {
+        if (sessionRepository.existsByClubIdAndSessionStatusAndDeletedAtIsNull(clubId, SessionStatus.ACTIVED)) {
             throw new CustomException(ErrorCode.SESSION_ALREADY_ACTIVE);
         }
-        Club club = clubRepository.findById(sessionDto.getClubId())
+        Club club = clubRepository.findById(clubId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CLUB));
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
@@ -64,13 +64,29 @@ public class SessionService {
                 .sessionStatus(SessionStatus.SCHEDULED)
                 .sessionName(sessionDto.getSessionName())
                 .uuid(sessionUuid)
-                .exceptStartAt(sessionDto.getExceptStartAt())
-                .exceptEndAt(sessionDto.getExceptEndAt())
+                .expectStartAt(sessionDto.getExpectStartAt())
+                .expectEndAt(sessionDto.getExpectEndAt())
                 .member(member)
                 .club(club)
                 .build();
         sessionRepository.save(session);
-        return sessionUuid;
+        return new SessionCreateDto(session.getId(), sessionUuid);
+    }
+
+    // 세션 상세 조회
+    public Session getSessionDetail(Long memberId, Long clubId, Long sessionId) {
+        clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+        return sessionRepository.findByIdAndDeletedAtIsNull(sessionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+    }
+
+    // 활성 세션 조회
+    public Session getActiveSession(Long memberId, Long clubId) {
+        clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+        return sessionRepository.findByClubIdAndSessionStatusAndDeletedAtIsNull(clubId, SessionStatus.ACTIVED)
+                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_ACTIVE));
     }
 
     //softDelete 시간 업데이트
@@ -116,11 +132,11 @@ public class SessionService {
         if (sessionDto.getSessionName() != null) {
             session.setSessionName(sessionDto.getSessionName());
         }
-        if (sessionDto.getExceptStartAt() != null) {
-            session.setExceptStartAt(sessionDto.getExceptStartAt());
+        if (sessionDto.getExpectStartAt() != null) {
+            session.setExpectStartAt(sessionDto.getExpectStartAt());
         }
-        if (sessionDto.getExceptEndAt() != null) {
-            session.setExceptEndAt(sessionDto.getExceptEndAt());
+        if (sessionDto.getExpectEndAt() != null) {
+            session.setExpectEndAt(sessionDto.getExpectEndAt());
         }
 
         sessionRepository.save(session);
