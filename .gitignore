@@ -35,16 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
-
-### 환경 설정 파일 ###
+application.yml
+application-local.yml
+src/main/resources/firebase
 .env
 .env.*
-!.env.example
-
-### YML 설정 파일 ###
-src/main/resources/application.yml
-src/main/resources/application-local.yml
-
-### Firebase ###
-src/main/resources/firebase/
-resource/firebase/
