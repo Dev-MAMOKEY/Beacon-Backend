@@ -20,11 +20,11 @@ public class Session extends GlobalEntity {
     @Column(name = "session_name")
     private String sessionName;
 
-    @Column(name = "except_start_at")
-    private LocalDateTime exceptStartAt;
+    @Column(name = "expect_start_at")
+    private LocalDateTime expectStartAt;
 
-    @Column(name = "except_end_at")
-    private LocalDateTime exceptEndAt;
+    @Column(name = "expect_end_at")
+    private LocalDateTime expectEndAt;
 
     @Column(name = "start_at") //실제 시작시간
     private LocalDateTime startAt;
