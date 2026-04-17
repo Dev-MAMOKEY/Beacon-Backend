@@ -1,6 +1,5 @@
 package com.mamoki.beacon.global.security.jwt;
 
-import com.mamoki.beacon.domain.club_member.entity.Role;
 import com.mamoki.beacon.global.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -49,13 +48,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // 중복 �
             Claims claims = jwtUtil.parseClaims(token); // 토큰에서 클레임 추출
 
             Long memberId = Long.parseLong(claims.getSubject());
-            Role role = Role.valueOf(claims.get("role", String.class));
 
             // 추출된 정보를 통해 Spring Security가 이해할 수 있도록 인증 객체를 생성해주는 작업
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            memberId, null, List.of(new SimpleGrantedAuthority("ROLE_" + role.name())) // spring security에서 hasrole() 사용시 "ROLE_" 접두사 붙여줘야 권한 인식 가능
-                    );
+                            memberId, null, List.of(new SimpleGrantedAuthority("ROLE_MEMBER"))); // 인증 객체 생성
             SecurityContextHolder.getContext().setAuthentication(authentication); // SecurityContext에 인증 객체 저장
         } catch (ExpiredJwtException e) { // 토큰이 만료된 경우 예외처리
             sendErrorResponse(response, TOKEN_EXPIRED);

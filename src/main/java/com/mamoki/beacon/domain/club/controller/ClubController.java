@@ -6,6 +6,7 @@ import com.mamoki.beacon.domain.club.dto.ClubResponseDto;
 import com.mamoki.beacon.domain.club.service.ClubService;
 import com.mamoki.beacon.global.rsdata.RsData;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class ClubController {
     @PostMapping("/create") //동아리 생성 로직
     public ResponseEntity<RsData<ClubCreateResponseDto>> createClub(@AuthenticationPrincipal Long memberId, @RequestBody ClubDto clubDto) {
         ClubCreateResponseDto response = clubService.createClub(memberId, clubDto);
-        return ResponseEntity.ok().body(RsData.success(response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(RsData.success(response));
     }
 
     @PatchMapping("/{clubId}")
