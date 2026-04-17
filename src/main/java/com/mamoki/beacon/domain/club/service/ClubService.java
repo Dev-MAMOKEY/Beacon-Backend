@@ -10,6 +10,8 @@ import com.mamoki.beacon.domain.club_member.entity.Role;
 import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
 import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
+import com.mamoki.beacon.global.exception.CustomException;
+import com.mamoki.beacon.global.exception.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,7 +31,7 @@ public class ClubService {
         String fixedUuid = UUID.randomUUID().toString().replace("-", "");
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         Club club = Club.builder()
                 .clubName(clubDto.clubName())
@@ -49,13 +51,13 @@ public class ClubService {
     public void updateClub(Long memberId, Long clubId, ClubDto clubDto) {
 
         ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 동아리의 멤버가 아닙니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
         if (clubMember.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("동아리 관리자만 수행할 수 있습니다.");
+            throw new CustomException(ErrorCode.CLUB_ADMIN_REQUIRED);
         }
 
         Club club = clubRepository.findById(clubId)
-                .orElseThrow(() -> new IllegalArgumentException("동아리가 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
         if(clubDto.clubName() != null) { //동아리명 변경 시
             club.setClubName(clubDto.clubName());
         }
@@ -67,12 +69,12 @@ public class ClubService {
     @Transactional //소프트 삭제
     public void softDeleteClub(Long memberId, Long clubId) {
         ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 동아리의 멤버가 아닙니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
         if (clubMember.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("동아리 관리자만 수행할 수 있습니다.");
+            throw new CustomException(ErrorCode.CLUB_ADMIN_REQUIRED);
         }
         Club club = clubRepository.findById(clubId)
-                .orElseThrow(() -> new IllegalArgumentException("동아리가 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
         club.setIsDeleted(true); //소프트 삭제 처리
         club.setDeletedAt(LocalDateTime.now()); //소프트 삭제 시간 기록
     }
@@ -80,9 +82,9 @@ public class ClubService {
     //동아리 상세 정보 조회
     public ClubResponseDto searchClub(Long clubId) {
         Club club = clubRepository.findById(clubId)
-                .orElseThrow(() -> new IllegalArgumentException("동아리가 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
         if (Boolean.TRUE.equals(club.getIsDeleted())){
-            throw new IllegalArgumentException("삭제된 동아리입니다.");
+            throw new CustomException(ErrorCode.CLUB_ALREADY_DELETED);
         }
         return new ClubResponseDto(
                 club.getId(),

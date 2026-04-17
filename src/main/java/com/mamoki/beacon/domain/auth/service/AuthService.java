@@ -58,8 +58,7 @@ public class AuthService {
         }
 
         // ③ ClubMember 테이블에서 Role 결정 후 AT/RT 발급
-        Role role = resolveRole(member);
-        String accessToken = jwtProvider.createAccessToken(member.getId(), role);
+        String accessToken = jwtProvider.createAccessToken(member.getId());
         String refreshToken = jwtProvider.createRefreshToken(member.getId());
         member.updateRefreshToken(refreshToken); // RT DB 저장
 
@@ -88,8 +87,7 @@ public class AuthService {
         }
 
         // ④ ClubMember 테이블에서 Role 결정 후 새 AT/RT 발급
-        Role role = resolveRole(member);
-        String newAccessToken = jwtProvider.createAccessToken(member.getId(), role);
+        String newAccessToken = jwtProvider.createAccessToken(member.getId());
         String newRefreshToken = jwtProvider.createRefreshToken(member.getId());
         member.updateRefreshToken(newRefreshToken); // 새 RT로 DB 갱신
 
@@ -101,13 +99,5 @@ public class AuthService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         member.revokeRefreshToken();
-    }
-
-    // ClubMember에서 Role 결정: ADMIN이 하나라도 있으면 ADMIN, 없으면 MEMBER
-    private Role resolveRole(Member member) {
-        List<ClubMember> clubMembers = clubMemberRepository.findByMember(member);
-        return clubMembers.stream()
-                .map(ClubMember::getRole)
-                .anyMatch(r -> r == Role.ADMIN) ? Role.ADMIN : Role.MEMBER;
     }
 }

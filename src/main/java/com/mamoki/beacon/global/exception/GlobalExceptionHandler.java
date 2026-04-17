@@ -4,12 +4,14 @@ import com.mamoki.beacon.global.rsdata.RsData;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice // 컨트롤러에 대해 전역적으로 예외 처리하기 위해 사용하는 어노테이션
 public class GlobalExceptionHandler {
 
@@ -64,6 +66,7 @@ public class GlobalExceptionHandler {
     // 서버 에러 (500)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RsData<Void>> handle(Exception exception) {
+        log.error("[500 Internal Server Error] {}: {}", exception.getClass().getName(), exception.getMessage(), exception);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(RsData.fail(ErrorCode.INTERNAL_SERVER_ERROR));

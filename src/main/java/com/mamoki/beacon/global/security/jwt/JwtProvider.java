@@ -13,10 +13,9 @@ public class JwtProvider {
 
     private final JwtUtil jwtUtil;
 
-    public String createAccessToken(Long memberId, Role role) {
+    public String createAccessToken(Long memberId) {
         return Jwts.builder()
                 .subject(String.valueOf(memberId)) // 회원 ID를 문자열로 설정
-                .claim("role", role.name()) // Role 정보를 클레임에 추가
                 .claim("type", "access") // 토큰 유형을 클레임에 추가
                 .id(UUID.randomUUID().toString()) // 고유한 JWT ID 설정
                 .issuedAt(new Date()) // 발급 시간 설정

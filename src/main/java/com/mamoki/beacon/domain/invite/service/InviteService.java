@@ -33,15 +33,15 @@ public class InviteService {
     @Transactional
     public String requestInviteCode(Long memberId, Long clubId) {
         ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 클럽의 멤버가 아닙니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
 
         if (clubMember.getRole() != Role.ADMIN) { //어드민 아니면 에러
-            throw new CustomException(ErrorCode.FORBIDDEN);
+            throw new CustomException(ErrorCode.CLUB_ADMIN_REQUIRED);
         }
 
         //
-        Club club = clubRepository.findById(clubId).orElseThrow(() -> new IllegalArgumentException("해당 클럽이 존재하지 않습니다."));
-        Member member = memberRepository.findById(memberId).orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다."));
+        Club club = clubRepository.findById(clubId).orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         //이미 db에 있는데 중복저장되는거 방지하기 위해 오늘 생성된 초대코드가 있는지 확인
         LocalDateTime today = LocalDate.now(ZoneId.of("Asia/Seoul")).atStartOfDay();
@@ -68,7 +68,7 @@ public class InviteService {
     //초대코드로 가입하는 함수
     @Transactional
     public void responseInviteCode(Long memberId, Long clubId, String inviteCode) {
-        Club club = clubRepository.findById(clubId).orElseThrow(() -> new IllegalArgumentException("해당 클럽이 존재하지 않습니다."));
+        Club club = clubRepository.findById(clubId).orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
 
         //가입된 멤버인지 확인
         clubMemberRepository.findByMemberIdAndClubId(memberId, clubId).ifPresent(cm -> {
