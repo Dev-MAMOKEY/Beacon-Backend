@@ -3,12 +3,14 @@ package com.mamoki.beacon.domain.attendance.entity;
 import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.session.entity.Session;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Builder
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "attendance")
@@ -36,6 +38,9 @@ public class Attendance {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")

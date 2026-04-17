@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class SessionDto {
     private String sessionName;
-    private String uuid;
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
+    private LocalDateTime expectStartAt;
+    private LocalDateTime expectEndAt;
 }

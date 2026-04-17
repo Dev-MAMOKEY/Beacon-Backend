@@ -30,6 +30,7 @@ public class InviteService {
     private final ClubMemberRepository clubMemberRepository;
 
     //초대코드 생성 함수
+    @Transactional
     public String requestInviteCode(Long memberId, Long clubId) {
         ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
