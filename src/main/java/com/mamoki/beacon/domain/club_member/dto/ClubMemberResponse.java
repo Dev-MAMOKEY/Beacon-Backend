@@ -6,7 +6,7 @@ public record ClubMemberResponse(
         Long memberId,
         String name,
         int stdId,
-        Role role
-        // 출석률 추가해야함
+        Role role,
+        double rate
 ) {
 }
