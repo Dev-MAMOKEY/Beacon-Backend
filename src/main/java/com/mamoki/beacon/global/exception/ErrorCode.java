@@ -41,6 +41,8 @@ public enum ErrorCode {
     INVALID_ATTENDANCE_CODE(HttpStatus.BAD_REQUEST, "INVALID_ATTENDANCE_CODE", "출석 코드가 올바르지 않습니다."),
     BEACON_NOT_DETECTED(HttpStatus.BAD_REQUEST, "BEACON_NOT_DETECTED", "비콘 신호가 감지되지 않았습니다."),
     ALREADY_CHECKED_IN(HttpStatus.CONFLICT, "ALREADY_CHECKED_IN","이미 출석 처리된 세션입니다."),
+    ATTENDANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "ATTENDANCE_NOT_FOUND", "출석 기록이 존재하지 않습니다."),
+    INVALID_MANUAL_STATUS(HttpStatus.BAD_REQUEST, "INVALID_MANUAL_STATUS", "ABSENT는 수동 출석 처리에 사용할 수 없습니다."),
 
     // 서버 에러 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR","서버 오류가 발생했습니다.");
