@@ -16,8 +16,12 @@ public class ClubMemberController {
     private final ClubMemberService clubMemberService;
 
     @GetMapping("/{clubId}/members")
-    public ResponseEntity<RsData> getClubMembers(@PathVariable("clubId") Long clubId, @AuthenticationPrincipal Long requesterId) {
-        return ResponseEntity.ok().body(RsData.success(clubMemberService.getClubMembers(requesterId, clubId)));
+    public ResponseEntity<RsData> getClubMembers(
+            @PathVariable("clubId") Long clubId,
+            @AuthenticationPrincipal Long requesterId,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok().body(RsData.success(
+                clubMemberService.getClubMembers(requesterId, clubId, search)));
     }
 
     @PatchMapping("/{clubId}/members/{memberId}/role")

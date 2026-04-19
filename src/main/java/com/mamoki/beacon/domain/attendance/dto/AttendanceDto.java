@@ -13,7 +13,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AttendanceDto {
+    private Long recordId;
+    private Long memberId;
+    private String memberName;
+    private int stdId;
     private AttendanceStatus attendanceStatus;
+    private LocalDateTime checkedAt;
     private Boolean isManual;
     private String adminNote;
 }

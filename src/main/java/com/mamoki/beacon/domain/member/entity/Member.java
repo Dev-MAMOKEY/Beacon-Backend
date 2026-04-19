@@ -71,6 +71,10 @@ public class Member extends GlobalEntity {
         this.password = newPassword;
     }
 
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
+
     public void updateProfile(String newName, Boolean changePushEnabled) {
         this.name = newName;
         this.pushEnabled = changePushEnabled;

@@ -4,6 +4,7 @@ import com.mamoki.beacon.domain.club_member.dto.ClubMemberResponse;
 import com.mamoki.beacon.domain.club_member.dto.RoleUpdateRequest;
 import com.mamoki.beacon.domain.club_member.entity.ClubMember;
 import com.mamoki.beacon.domain.club_member.entity.Role;
+import com.mamoki.beacon.domain.attendance.service.AttendanceService;
 import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
 import com.mamoki.beacon.global.exception.CustomException;
@@ -21,6 +22,7 @@ public class ClubMemberService {
 
     private final ClubMemberRepository clubMemberRepository;
     private final MemberRepository memberRepository;
+    private final AttendanceService attendanceService;
 
     // 공통 검증 (동아리 멤버 조회, 역할 변경, 멤버 제명의 경우 관리자 기능)
     // 따라서 요청하는 사람이 멤버 정보가 있는지 동아리에 속해 있는지 관리자가 맞는지 체크함
@@ -41,16 +43,27 @@ public class ClubMemberService {
         }
     }
 
-    // 멤버 목록 조회
-    public List<ClubMemberResponse> getClubMembers(Long requesterId, Long clubId) {
+    // 멤버 목록 조회 (이름 또는 학번으로 검색 가능)
+    public List<ClubMemberResponse> getClubMembers(Long requesterId, Long clubId, String search) {
         validateAdmin(requesterId, clubId);
 
+        String keyword = (search == null) ? null : search.trim();
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+
         return clubMemberRepository.findByClubIdAndDeletedAtIsNull(clubId).stream()
+                .filter(cm -> {
+                    if (!hasKeyword) return true;
+                    String name = cm.getMember().getName();
+                    String stdId = String.valueOf(cm.getMember().getStdId());
+                    return name.contains(keyword) || stdId.contains(keyword);
+                })
                 .map(cm -> new ClubMemberResponse(
                         cm.getMember().getId(),
                         cm.getMember().getName(),
                         cm.getMember().getStdId(),
-                        cm.getRole()
+                        cm.getRole(),
+                        attendanceService.getAttendanceRate(
+                                cm.getMember().getId(), clubId).rate()
                 ))
                 .toList();
     }

@@ -3,6 +3,7 @@ package com.mamoki.beacon.domain.session.service;
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
 import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
+import com.mamoki.beacon.domain.attendance.service.AttendanceService;
 import com.mamoki.beacon.domain.club.entity.Club;
 import com.mamoki.beacon.domain.club.repository.ClubRepository;
 import com.mamoki.beacon.domain.club_member.entity.ClubMember;
@@ -18,13 +19,18 @@ import com.mamoki.beacon.domain.session.entity.SessionStatus;
 import com.mamoki.beacon.domain.session.repository.SessionRepository;
 import com.mamoki.beacon.global.exception.CustomException;
 import com.mamoki.beacon.global.exception.ErrorCode;
+import com.mamoki.beacon.global.fcm.service.FcmService;
 import com.mamoki.beacon.global.util.TotpUtil;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
+
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +46,9 @@ public class SessionService {
     private final AttendanceRepository attendanceRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AttendanceService attendanceService;
+    private final TaskScheduler taskScheduler;
+    private final FcmService fcmService;
 
     @Transactional
     public SessionCreateDto createSession(Long memberId, Long clubId, SessionDto sessionDto) {
@@ -50,7 +59,7 @@ public class SessionService {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
-        if (sessionRepository.existsByClubIdAndSessionStatusAndDeletedAtIsNull(clubId, SessionStatus.ACTIVED)) {
+        if (sessionRepository.existsByClubIdAndSessionStatusAndDeletedAtIsNull(clubId, SessionStatus.ACTIVE)) {
             throw new CustomException(ErrorCode.SESSION_ALREADY_ACTIVE);
         }
         Club club = clubRepository.findById(clubId)
@@ -85,7 +94,7 @@ public class SessionService {
     public Session getActiveSession(Long memberId, Long clubId) {
         clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
-        return sessionRepository.findByClubIdAndSessionStatusAndDeletedAtIsNull(clubId, SessionStatus.ACTIVED)
+        return sessionRepository.findByClubIdAndSessionStatusAndDeletedAtIsNull(clubId, SessionStatus.ACTIVE)
                 .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_ACTIVE));
     }
 
@@ -94,7 +103,7 @@ public class SessionService {
     public void softDeletedSession(Long memberId, Long sessionId) {
 
         Session session = sessionRepository.findById(sessionId).orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
-        if (session.getSessionStatus() == SessionStatus.ACTIVED) {
+        if (session.getSessionStatus() == SessionStatus.ACTIVE) {
             throw new CustomException(ErrorCode.NOT_DELETED_SESSION);
         }
 
@@ -142,7 +151,7 @@ public class SessionService {
         sessionRepository.save(session);
     }
 
-    //session시작하고 ACTIVED로 변경하기 위한 세션시작 함수
+    //session시작하고 ACTIVE로 변경하기 위한 세션시작 함수
     @Transactional
     public SessionStartDto startedSession(Long memberId, Long sessionId) {
         Session session = sessionRepository.findById(sessionId)
@@ -166,9 +175,32 @@ public class SessionService {
             throw new CustomException(ErrorCode.OTP_GENERATION_FAILED);
         }
 
-        session.setSessionStatus(SessionStatus.ACTIVED);
+        session.setSessionStatus(SessionStatus.ACTIVE);
         session.setStartAt(LocalDateTime.now());
         sessionRepository.save(session);
+
+        //시간 지나면 자동으로 출석 종료 함수 실행할 수 있는 스케쥴러
+        taskScheduler.schedule(
+                () -> attendanceService.closeAttendance(session.getId()),  // 할 일
+                Instant.now().plus(Duration.ofMinutes(1))                  // 언제
+        );
+
+        //세션 시작 알림: 동아리 전체 멤버에게 FCM 멀티캐스트 발송
+        List<String> tokens = clubMemberRepository
+                .findByClubIdAndDeletedAtIsNull(session.getClub().getId()).stream()
+                .map(ClubMember::getMember)
+                .filter(m -> Boolean.TRUE.equals(m.getPushEnabled()))
+                .map(Member::getFcmToken)
+                .filter(t -> t != null && !t.isBlank())
+                .toList();
+
+        if (!tokens.isEmpty()) {
+            fcmService.sendMultiNotification(
+                    "출석 체크 시작",
+                    "'" + session.getSessionName() + "' 출석 체크가 시작되었습니다. 지금 출석해주세요!",
+                    tokens
+            );
+        }
 
         return new SessionStartDto(otpCode, session.getUuid());
     }
@@ -185,7 +217,7 @@ public class SessionService {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
-        if (session.getSessionStatus() != SessionStatus.ACTIVED) { //세션 활성상태만 가능
+        if (session.getSessionStatus() != SessionStatus.ACTIVE) { //세션 활성상태만 가능
             throw new CustomException(ErrorCode.SESSION_NOT_ACTIVE);
         }
 

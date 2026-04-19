@@ -57,7 +57,12 @@ public class AuthService {
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // ③ ClubMember 테이블에서 Role 결정 후 AT/RT 발급
+        // ③ FCM 토큰이 포함되어 있으면 갱신 (모바일 앱 로그인 케이스)
+        if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
+            member.updateFcmToken(request.fcmToken());
+        }
+
+        // ④ AT/RT 발급
         String accessToken = jwtProvider.createAccessToken(member.getId());
         String refreshToken = jwtProvider.createRefreshToken(member.getId());
         member.updateRefreshToken(refreshToken); // RT DB 저장
