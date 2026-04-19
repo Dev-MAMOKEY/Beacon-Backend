@@ -12,7 +12,7 @@ import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
 import com.mamoki.beacon.global.exception.CustomException;
 import com.mamoki.beacon.global.exception.ErrorCode;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

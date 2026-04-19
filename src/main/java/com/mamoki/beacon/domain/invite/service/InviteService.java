@@ -11,15 +11,11 @@ import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
 import com.mamoki.beacon.global.exception.CustomException;
 import com.mamoki.beacon.global.exception.ErrorCode;
-import com.mamoki.beacon.global.util.TotpUtil;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Optional;
+import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -29,61 +25,65 @@ public class InviteService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
 
-    //초대코드 생성 함수
-    @Transactional
-    public String requestInviteCode(Long memberId, Long clubId) {
-        ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
+    private static final String CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int CODE_LENGTH = 6;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
-        if (clubMember.getRole() != Role.ADMIN) { //어드민 아니면 에러
+    //관리자 검증 함수
+    private void validateAdmin(Long memberId, Long clubId) {
+        ClubMember cm = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+        if (cm.getRole() != Role.ADMIN) {
             throw new CustomException(ErrorCode.CLUB_ADMIN_REQUIRED);
         }
+    }
 
-        //
-        Club club = clubRepository.findById(clubId).orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
-        Member member = memberRepository.findById(memberId).orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
-
-        //이미 db에 있는데 중복저장되는거 방지하기 위해 오늘 생성된 초대코드가 있는지 확인
-        LocalDateTime today = LocalDate.now(ZoneId.of("Asia/Seoul")).atStartOfDay();
-        Optional<Invite> existing = inviteRepository.findByClubAndCreatedAt(club, today);
-        if (existing.isPresent()) {
-            return existing.get().getInviteCode();
+    //6자리 랜덤 영숫자 생성
+    private String generateRandomCode() {
+        StringBuilder sb = new StringBuilder(CODE_LENGTH);
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            sb.append(CODE_CHARS.charAt(RANDOM.nextInt(CODE_CHARS.length())));
         }
+        return sb.toString();
+    }
 
-        String code;
+    //초대코드 발급 (기존 유효 코드 자동 무효화 후 새 코드 발급)
+    @Transactional
+    public String requestInviteCode(Long memberId, Long clubId) {
+        validateAdmin(memberId, clubId);
 
-        //클럽 psk로 totp 생성
-        try{
-            code = TotpUtil.generateTotp(club.getPsk());
-        }catch (Exception e){
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
+        //기존 유효 코드 있으면 무효화
+        inviteRepository.findByClubAndRevokedAtIsNull(club)
+                .ifPresent(Invite::revoke);
+
+        //새 코드 생성 및 저장
+        String code = generateRandomCode();
         Invite invite = new Invite(member, club, code);
         inviteRepository.save(invite);
 
         return code;
     }
 
-    //초대코드로 가입하는 함수
+    //초대코드로 가입
     @Transactional
     public void responseInviteCode(Long memberId, Long clubId, String inviteCode) {
-        Club club = clubRepository.findById(clubId).orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
 
-        //가입된 멤버인지 확인
+        //이미 가입된 멤버인지 확인
         clubMemberRepository.findByMemberIdAndClubId(memberId, clubId).ifPresent(cm -> {
             throw new CustomException(ErrorCode.ALREADY_CLUB_MEMBER);
         });
 
-        //초대 인증확인을 위한 변수
-        boolean isValid;
-        try {
-            isValid = TotpUtil.verifyTotp(club.getPsk(), inviteCode);
-        } catch (Exception e) { //값이 들어오지 않으면 500
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
-
-        if (!isValid) { //값이 다르면 INVALID INVITE CODE 던짐
+        //코드 DB 조회 + 무효화 여부 검증
+        Invite invite = inviteRepository.findByInviteCodeAndClub(inviteCode, club)
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INVITE_CODE));
+        if (invite.getRevokedAt() != null) {
             throw new CustomException(ErrorCode.INVALID_INVITE_CODE);
         }
 
@@ -92,5 +92,32 @@ public class InviteService {
 
         ClubMember newMember = new ClubMember(member, club, Role.MEMBER);
         clubMemberRepository.save(newMember);
+    }
+
+    //현재 유효한 초대코드 조회 (관리자)
+    @Transactional(readOnly = true)
+    public String getCurrentInviteCode(Long memberId, Long clubId) {
+        validateAdmin(memberId, clubId);
+
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
+
+        Invite invite = inviteRepository.findByClubAndRevokedAtIsNull(club)
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INVITE_CODE));
+
+        return invite.getInviteCode();
+    }
+
+    //초대코드 수동 무효화 (관리자)
+    @Transactional
+    public void revokeInviteCode(Long memberId, Long clubId) {
+        validateAdmin(memberId, clubId);
+
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
+
+        Invite invite = inviteRepository.findByClubAndRevokedAtIsNull(club)
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INVITE_CODE));
+        invite.revoke();
     }
 }

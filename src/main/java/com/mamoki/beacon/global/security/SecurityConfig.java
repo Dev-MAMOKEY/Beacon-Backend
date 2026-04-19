@@ -36,6 +36,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login").permitAll() // 로그인, 회원가입은 인증 불필요
+                .requestMatchers("/fcm-test.html", "/firebase-messaging-sw.js", "/favicon.ico").permitAll() // FCM 테스트 페이지
                 .anyRequest().authenticated()
             )
             // JWT 필터를 Spring Security 기본 인증 필터 앞에 배치

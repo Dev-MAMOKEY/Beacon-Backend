@@ -13,7 +13,9 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "attendance")
+@Table(name = "attendance", uniqueConstraints = { //출석 중복체크를 위해 A요청 딜레이가 걸리고 B요청이 들어오면 중복처리를 서버에서 해도 안됨
+        @UniqueConstraint(name = "uk_attendance_member_session", columnNames = {"member_id", "session_id"})
+})
 public class Attendance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,4 +51,10 @@ public class Attendance {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id")
     private Session session;
+
+    public void updateStatus(AttendanceStatus status, String adminNote) {
+        this.attendanceStatus = status;
+        this.adminNote = adminNote;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
