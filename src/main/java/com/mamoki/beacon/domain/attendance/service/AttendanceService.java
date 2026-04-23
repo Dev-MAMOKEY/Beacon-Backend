@@ -2,6 +2,7 @@ package com.mamoki.beacon.domain.attendance.service;
 
 import com.mamoki.beacon.domain.attendance.dto.AttendanceDto;
 import com.mamoki.beacon.domain.attendance.dto.AttendanceRateResponse;
+import com.mamoki.beacon.domain.attendance.dto.MyAttendanceRecordDto;
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
 import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -237,5 +239,45 @@ public class AttendanceService {
                         a.getIsManual(),
                         a.getAdminNote()
                 ));
+    }
+
+    //월별 출석 기록 조회 함수
+    @Transactional(readOnly = true)
+    public MyAttendanceRecordDto getMyAttendanceRecord(Long memberId, Long clubId, int year, int month) {
+        clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+
+        //리스트에 저장
+        List<Attendance> records = attendanceRepository.findMonthlyRecordsByMemberAndClub(
+                memberId, clubId, year, month);
+
+        //세션별 정보들을 리스트에 저장
+        List<MyAttendanceRecordDto.AttendanceRecordItem> items = records.stream()
+                .map(a -> new MyAttendanceRecordDto.AttendanceRecordItem(
+                        a.getSession().getId(),
+                        a.getSession().getSessionName(),
+                        a.getSession().getStartAt().toLocalDate(),
+                        a.getAttendanceStatus(),
+                        a.getCheckedAt(),
+                        a.getAdminNote()
+                ))
+                .toList();
+
+        //status별로 숫자 체크를 하기위한 Map 생성
+        Map<AttendanceStatus, Long> countMap = records.stream()
+                .collect(Collectors.groupingBy(Attendance::getAttendanceStatus, Collectors.counting()));
+
+        //Map에 있던 값들을(출석값들) DTO에 넘김
+        MyAttendanceRecordDto.StatusSummary summary = new MyAttendanceRecordDto.StatusSummary(
+                countMap.getOrDefault(AttendanceStatus.PRESENT, 0L),
+                countMap.getOrDefault(AttendanceStatus.LATE, 0L),
+                countMap.getOrDefault(AttendanceStatus.ABSENT, 0L),
+                countMap.getOrDefault(AttendanceStatus.ETC, 0L)
+        );
+
+        //출석 조회함수에서 rate만 꺼내서 dto에 넣음
+        AttendanceRateResponse response = getAttendanceRate(memberId, clubId);
+        return new MyAttendanceRecordDto(year, month, items, summary, response.rate());
+
     }
 }
