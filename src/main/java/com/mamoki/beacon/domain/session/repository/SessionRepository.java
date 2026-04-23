@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface SessionRepository extends JpaRepository<Session, Long> {
-    boolean existsByClubIdAndSessionStatusAndDeletedAtIsNull(Long clubId, SessionStatus status);
     Slice<Session> findByClubIdAndSessionStatusAndDeletedAtIsNull(Long clubId, SessionStatus status, Pageable pageable);
     Slice<Session> findByClubIdAndDeletedAtIsNull(Long clubId, Pageable pageable);
     Optional<Session> findByIdAndDeletedAtIsNull(Long sessionId); // 상세 조회용

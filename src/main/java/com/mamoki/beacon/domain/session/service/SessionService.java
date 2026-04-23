@@ -1,5 +1,6 @@
 package com.mamoki.beacon.domain.session.service;
 
+
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
 import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
@@ -11,7 +12,7 @@ import com.mamoki.beacon.domain.club_member.entity.Role;
 import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
 import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
-import com.mamoki.beacon.domain.session.dto.SessionCreateDto;
+import com.mamoki.beacon.domain.session.dto.SessionCreateRequestDto;
 import com.mamoki.beacon.domain.session.dto.SessionDto;
 import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
@@ -29,9 +30,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -51,35 +51,55 @@ public class SessionService {
     private final FcmService fcmService;
 
     @Transactional
-    public SessionCreateDto createSession(Long memberId, Long clubId, SessionDto sessionDto) {
+    public void createSession(Long adminId, Long clubId, SessionCreateRequestDto request) {
+        attendanceService.validateAdmin(adminId, clubId);
 
-        ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
-        if (clubMember.getRole() != Role.ADMIN) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
+        Club club = clubRepository.findByIdAndIsDeletedFalse(clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
 
-        if (sessionRepository.existsByClubIdAndSessionStatusAndDeletedAtIsNull(clubId, SessionStatus.ACTIVE)) {
-            throw new CustomException(ErrorCode.SESSION_ALREADY_ACTIVE);
-        }
-        Club club = clubRepository.findById(clubId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CLUB));
-        Member member = memberRepository.findById(memberId)
+
+        Member member = memberRepository.findById(adminId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
-        //세션 uuid생성
-        String sessionUuid = UUID.randomUUID().toString().replace("-", "");
-        Session session = Session.builder()
-                .sessionStatus(SessionStatus.SCHEDULED)
-                .sessionName(sessionDto.getSessionName())
-                .uuid(sessionUuid)
-                .expectStartAt(sessionDto.getExpectStartAt())
-                .expectEndAt(sessionDto.getExpectEndAt())
-                .member(member)
-                .club(club)
-                .build();
-        sessionRepository.save(session);
-        return new SessionCreateDto(session.getId(), sessionUuid);
+        // 반복 옵션이 있으면 여러 개, 없으면 단일 생성
+        if (Boolean.TRUE.equals(request.isRepeat())) {
+            List<LocalDate> dates = new ArrayList<>();
+            LocalDate date = request.expectStartAt().toLocalDate();
+            while (!date.isAfter(request.repeatEndDate())) {
+                if (date.getDayOfWeek() == request.dayOfWeek()) {
+                    dates.add(date);
+                }
+                date = date.plusDays(1);
+            }
+
+            LocalTime startTime = request.expectStartAt().toLocalTime();
+            LocalTime endTime = request.expectEndAt().toLocalTime();
+
+            List<Session> sessions = dates.stream()
+                    .map(d -> (Session) Session.builder()
+                            .sessionName(request.sessionName())
+                            .expectStartAt(LocalDateTime.of(d, startTime))
+                            .expectEndAt(LocalDateTime.of(d, endTime))
+                            .sessionStatus(SessionStatus.SCHEDULED)
+                            .uuid(UUID.randomUUID().toString())
+                            .member(member)
+                            .club(club)
+                            .build())
+                    .toList();
+
+            sessionRepository.saveAll(sessions);
+
+        } else { //단일생성
+            sessionRepository.save(Session.builder()
+                    .sessionName(request.sessionName())
+                    .expectStartAt(request.expectStartAt())
+                    .expectEndAt(request.expectEndAt())
+                    .sessionStatus(SessionStatus.SCHEDULED)
+                    .uuid(UUID.randomUUID().toString())
+                    .member(member)
+                    .club(club)
+                    .build());
+        }
     }
 
     // 세션 상세 조회
