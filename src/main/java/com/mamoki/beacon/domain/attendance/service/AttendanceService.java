@@ -341,4 +341,33 @@ public class AttendanceService {
 
         return new MemberStatsResponseDto(items);
     }
+
+    @Transactional(readOnly = true)
+    public DistributionResponseDto getDistribution(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate) {
+        validateAdmin(adminId, clubId); //어드민 검증
+
+        LocalDateTime startAt = startDate.atStartOfDay(); //1일
+        LocalDateTime endAt = endDate.atTime(23, 59, 59); //월 마지막날
+
+        List<Object[]> rows = attendanceRepository.countByStatusGrouped(clubId, startAt, endAt);
+
+        //map에 컬럼담아서 계산
+        Map<AttendanceStatus, Long> countMap = new HashMap<>();
+        for (Object[] row : rows) {
+            countMap.put((AttendanceStatus) row[0], ((Number) row[1]).longValue());
+        }
+
+        long present = countMap.getOrDefault(AttendanceStatus.PRESENT, 0L);
+        long late    = countMap.getOrDefault(AttendanceStatus.LATE, 0L);
+        long absent  = countMap.getOrDefault(AttendanceStatus.ABSENT, 0L);
+        long etc     = countMap.getOrDefault(AttendanceStatus.ETC, 0L);
+        long total   = present + late + absent + etc;
+
+        double presentRate = total == 0 ? 0.0 : (double) present / total * 100.0;
+        double lateRate    = total == 0 ? 0.0 : (double) late    / total * 100.0;
+        double absentRate  = total == 0 ? 0.0 : (double) absent  / total * 100.0;
+        double etcRate     = total == 0 ? 0.0 : (double) etc     / total * 100.0;
+
+        return new DistributionResponseDto(total, present, presentRate, late, lateRate, absent, absentRate, etc, etcRate);
+    }
 }

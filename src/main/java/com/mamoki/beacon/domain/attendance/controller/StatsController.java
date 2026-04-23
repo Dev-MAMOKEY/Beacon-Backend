@@ -1,5 +1,6 @@
 package com.mamoki.beacon.domain.attendance.controller;
 
+import com.mamoki.beacon.domain.attendance.dto.DistributionResponseDto;
 import com.mamoki.beacon.domain.attendance.dto.MemberStatsResponseDto;
 import com.mamoki.beacon.domain.attendance.dto.TrendResponseDto;
 import com.mamoki.beacon.domain.attendance.service.AttendanceService;
@@ -28,8 +29,20 @@ public class StatsController {
         return ResponseEntity.ok(RsData.success(attendanceService.getTrend(adminId, clubId, startDate, endDate)));
     }
 
+    //멤버별 출석률 조회
     @GetMapping("/members")
     public ResponseEntity<RsData<MemberStatsResponseDto>> getMemberStats(@AuthenticationPrincipal Long adminId, @PathVariable Long clubId) {
         return ResponseEntity.ok(RsData.success(attendanceService.getMemberStats(adminId, clubId)));
+    }
+
+    //상태별 조회
+    @GetMapping("/distribution")
+    public ResponseEntity<RsData<DistributionResponseDto>> getDistribution(
+            @AuthenticationPrincipal Long adminId,
+            @PathVariable Long clubId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        return ResponseEntity.ok(RsData.success(attendanceService.getDistribution(adminId, clubId, startDate, endDate)));
     }
 }
