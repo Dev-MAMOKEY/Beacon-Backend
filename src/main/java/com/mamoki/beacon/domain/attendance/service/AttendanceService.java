@@ -370,4 +370,28 @@ public class AttendanceService {
 
         return new DistributionResponseDto(total, present, presentRate, late, lateRate, absent, absentRate, etc, etcRate);
     }
+
+    //출석률을 파일로 뽑아내기 위한 함수
+    @Transactional(readOnly = true)
+    public ExportResponseDto getExportData(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate, Long memberId) {
+        validateAdmin(adminId, clubId);
+
+        LocalDateTime startAt = startDate.atStartOfDay();
+        LocalDateTime endAt = endDate.atTime(23, 59, 59);
+
+        List<Attendance> records = attendanceRepository.findForExport(clubId, startAt, endAt, memberId);
+
+        List<ExportResponseDto.ExportItem> items = records.stream()
+                .map(a -> new ExportResponseDto.ExportItem(
+                        a.getMember().getName(),
+                        a.getMember().getStdId(),
+                        a.getSession().getSessionName(),
+                        a.getSession().getStartAt().toLocalDate(),
+                        a.getAttendanceStatus(),
+                        a.getAdminNote()
+                ))
+                .toList();
+
+        return new ExportResponseDto(items);
+    }
 }
