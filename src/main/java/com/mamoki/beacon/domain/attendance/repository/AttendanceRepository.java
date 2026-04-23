@@ -91,4 +91,23 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt
     );
+
+    //파일로 뽑아내기 위한 쿼리문
+    @Query("""
+       SELECT a FROM Attendance a
+       JOIN FETCH a.session s
+       JOIN FETCH a.member m
+       WHERE s.club.id = :clubId
+         AND s.deletedAt IS NULL
+         AND a.deletedAt IS NULL
+         AND s.startAt BETWEEN :startAt AND :endAt
+         AND (:memberId IS NULL OR m.id = :memberId)
+       ORDER BY s.startAt ASC, m.stdId ASC
+       """)
+    List<Attendance> findForExport(
+            @Param("clubId") Long clubId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt,
+            @Param("memberId") Long memberId
+    );
 }
