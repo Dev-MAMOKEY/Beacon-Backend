@@ -38,4 +38,23 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("joinedAt") LocalDateTime joinedAt,
             @Param("statuses") List<AttendanceStatus> statuses
     );
+
+    //월별 출석 기록 조회 하기위한 쿼리문
+    @Query("""
+           SELECT a FROM Attendance a
+           JOIN FETCH a.session s
+           WHERE a.member.id = :memberId
+             AND s.club.id = :clubId
+             AND s.deletedAt IS NULL
+             AND a.deletedAt IS NULL
+             AND YEAR(s.startAt) = :year
+             AND MONTH(s.startAt) = :month
+           ORDER BY s.startAt ASC
+           """)
+    List<Attendance> findMonthlyRecordsByMemberAndClub( //리스트형식으로 저장
+            @Param("memberId") Long memberId,
+            @Param("clubId") Long clubId,
+            @Param("year") int year,
+            @Param("month") int month
+    );
 }
