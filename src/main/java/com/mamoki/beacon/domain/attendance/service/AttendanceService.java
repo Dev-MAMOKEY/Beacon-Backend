@@ -1,9 +1,6 @@
 package com.mamoki.beacon.domain.attendance.service;
 
-import com.mamoki.beacon.domain.attendance.dto.AttendanceDto;
-import com.mamoki.beacon.domain.attendance.dto.AttendanceRateResponse;
-import com.mamoki.beacon.domain.attendance.dto.MyAttendanceRecordDto;
-import com.mamoki.beacon.domain.attendance.dto.TrendResponseDto;
+import com.mamoki.beacon.domain.attendance.dto.*;
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
 import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
@@ -319,5 +316,29 @@ public class AttendanceService {
         }
 
         return new TrendResponseDto(new ArrayList<>(sessionMap.values()));
+    }
+
+    @Transactional(readOnly = true)
+    public MemberStatsResponseDto getMemberStats(Long adminId, Long clubId) {
+        validateAdmin(adminId, clubId); //운영진 검증
+
+        List<ClubMember> members = clubMemberRepository.findByClubIdAndDeletedAtIsNull(clubId);
+
+        //멤버 리스트를 돌면서 출석률 계산하고 이 리스트에 넣음
+        List<MemberStatsResponseDto.MemberStatItem> items = members.stream()
+                .map(cm -> {
+                    AttendanceRateResponse rate = getAttendanceRate(cm.getMember().getId(), clubId);
+                    return new MemberStatsResponseDto.MemberStatItem( //getAttendanceRate로 뽑아서 채우고 나머지도 넣기
+                            cm.getMember().getId(),
+                            cm.getMember().getName(),
+                            cm.getMember().getStdId(),
+                            rate.totalSessions(),
+                            rate.attendedCount(),
+                            rate.rate()
+                    );
+                })
+                .toList();
+
+        return new MemberStatsResponseDto(items);
     }
 }
