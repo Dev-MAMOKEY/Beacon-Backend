@@ -75,4 +75,20 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt
     );
+
+    //상태별 추이를 보기위한 쿼리문
+    @Query("""
+       SELECT a.attendanceStatus, COUNT(a)
+       FROM Attendance a
+       WHERE a.session.club.id = :clubId
+         AND a.session.deletedAt IS NULL
+         AND a.deletedAt IS NULL
+         AND a.session.startAt BETWEEN :startAt AND :endAt
+       GROUP BY a.attendanceStatus
+       """)
+    List<Object[]> countByStatusGrouped(
+            @Param("clubId") Long clubId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt
+    );
 }
