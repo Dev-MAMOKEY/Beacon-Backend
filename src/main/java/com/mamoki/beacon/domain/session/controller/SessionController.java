@@ -1,6 +1,6 @@
 package com.mamoki.beacon.domain.session.controller;
 
-import com.mamoki.beacon.domain.session.dto.SessionCreateDto;
+import com.mamoki.beacon.domain.session.dto.SessionCreateRequestDto;
 import com.mamoki.beacon.domain.session.dto.SessionDto;
 import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
@@ -24,12 +24,12 @@ public class SessionController {
 
     // 세션 생성 (ADMIN)
     @PostMapping
-    public ResponseEntity<RsData<SessionCreateDto>> createSession(
+    public ResponseEntity<RsData<Void>> createSession(
             @AuthenticationPrincipal Long memberId,
             @PathVariable Long clubId,
-            @RequestBody SessionDto sessionDto) {
-        SessionCreateDto result = sessionService.createSession(memberId, clubId, sessionDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(RsData.success(result));
+            @RequestBody SessionCreateRequestDto requestDto) {
+        sessionService.createSession(memberId, clubId, requestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(RsData.success(null));
     }
 
     // 세션 목록 조회 (MEMBER)

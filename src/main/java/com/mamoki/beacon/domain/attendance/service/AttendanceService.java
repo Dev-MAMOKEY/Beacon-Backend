@@ -40,7 +40,7 @@ public class AttendanceService {
     private static final long LATE_MINUTES = 5; //지각 시간
 
     //관리자 검증 함수
-    private void validateAdmin(Long requesterId, Long clubId) {
+    public void validateAdmin(Long requesterId, Long clubId) {
         ClubMember requester = clubMemberRepository.findByMemberIdAndClubId(requesterId, clubId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
         if (requester.getRole() != Role.ADMIN) {
