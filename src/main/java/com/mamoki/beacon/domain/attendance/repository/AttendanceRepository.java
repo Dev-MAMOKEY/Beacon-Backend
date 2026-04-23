@@ -57,4 +57,22 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("year") int year,
             @Param("month") int month
     );
+
+    //세션별 상태별 인원수 가져오는 쿼리문
+    @Query("""
+       SELECT a.session.id, a.session.sessionName, a.session.startAt, a.attendanceStatus, COUNT(a)
+       FROM Attendance a
+       WHERE a.session.club.id = :clubId
+         AND a.session.deletedAt IS NULL
+         AND a.deletedAt IS NULL
+         AND a.session.startAt BETWEEN :startAt AND :endAt
+         AND a.session.sessionStatus = com.mamoki.beacon.domain.session.entity.SessionStatus.ENDED
+       GROUP BY a.session.id, a.session.sessionName, a.session.startAt, a.attendanceStatus
+       ORDER BY a.session.startAt ASC
+       """)
+    List<Object[]> countBySessionAndStatus(
+            @Param("clubId") Long clubId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt
+    );
 }

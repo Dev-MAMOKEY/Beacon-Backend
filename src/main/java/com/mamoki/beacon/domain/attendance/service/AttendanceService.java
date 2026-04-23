@@ -3,6 +3,7 @@ package com.mamoki.beacon.domain.attendance.service;
 import com.mamoki.beacon.domain.attendance.dto.AttendanceDto;
 import com.mamoki.beacon.domain.attendance.dto.AttendanceRateResponse;
 import com.mamoki.beacon.domain.attendance.dto.MyAttendanceRecordDto;
+import com.mamoki.beacon.domain.attendance.dto.TrendResponseDto;
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
 import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
@@ -24,10 +25,9 @@ import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -278,6 +278,46 @@ public class AttendanceService {
         //출석 조회함수에서 rate만 꺼내서 dto에 넣음
         AttendanceRateResponse response = getAttendanceRate(memberId, clubId);
         return new MyAttendanceRecordDto(year, month, items, summary, response.rate());
+    }
 
+    @Transactional(readOnly = true)
+    public TrendResponseDto getTrend(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate) {
+        validateAdmin(adminId, clubId); //운영진 검증
+
+        LocalDateTime startAt = startDate.atStartOfDay(); //월초
+        LocalDateTime endAt = endDate.atTime(23, 59, 59); //월말
+
+        List<Object[]> rows = attendanceRepository.countBySessionAndStatus(clubId, startAt, endAt);
+
+        // 세션별로 매핑
+        Map<Long, TrendResponseDto.TrendItem> sessionMap = new LinkedHashMap<>();
+
+
+        for (Object[] row : rows) {
+            //컬럼값들을 변수에 다 담음
+            Long sessionId = ((Number) row[0]).longValue();
+            String sessionName = (String) row[1];
+            LocalDate date = ((LocalDateTime) row[2]).toLocalDate();
+            AttendanceStatus status = (AttendanceStatus) row[3];
+            long count = ((Number) row[4]).longValue();
+
+            //출석률 계산
+            sessionMap.compute(sessionId, (id, existing) -> {
+                long prevTotal = existing != null ? existing.total() : 0L;
+                long prevAttended = existing != null ? existing.attended() : 0L;
+
+                boolean isAttended = status == AttendanceStatus.PRESENT
+                        || status == AttendanceStatus.LATE
+                        || status == AttendanceStatus.ETC;
+
+                long newTotal = prevTotal + count;
+                long newAttended = prevAttended + (isAttended ? count : 0L);
+                double rate = newTotal == 0 ? 0.0 : (double) newAttended / newTotal * 100.0;
+
+                return new TrendResponseDto.TrendItem(sessionId, sessionName, date, newTotal, newAttended, rate);
+            });
+        }
+
+        return new TrendResponseDto(new ArrayList<>(sessionMap.values()));
     }
 }
