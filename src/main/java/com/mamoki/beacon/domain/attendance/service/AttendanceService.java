@@ -1,7 +1,6 @@
 package com.mamoki.beacon.domain.attendance.service;
 
-import com.mamoki.beacon.domain.attendance.dto.AttendanceDto;
-import com.mamoki.beacon.domain.attendance.dto.AttendanceRateResponse;
+import com.mamoki.beacon.domain.attendance.dto.*;
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
 import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
@@ -23,9 +22,9 @@ import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,7 +40,7 @@ public class AttendanceService {
     private static final long LATE_MINUTES = 5; //지각 시간
 
     //관리자 검증 함수
-    private void validateAdmin(Long requesterId, Long clubId) {
+    public void validateAdmin(Long requesterId, Long clubId) {
         ClubMember requester = clubMemberRepository.findByMemberIdAndClubId(requesterId, clubId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
         if (requester.getRole() != Role.ADMIN) {
@@ -237,5 +236,162 @@ public class AttendanceService {
                         a.getIsManual(),
                         a.getAdminNote()
                 ));
+    }
+
+    //월별 출석 기록 조회 함수
+    @Transactional(readOnly = true)
+    public MyAttendanceRecordDto getMyAttendanceRecord(Long memberId, Long clubId, int year, int month) {
+        clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+
+        //리스트에 저장
+        List<Attendance> records = attendanceRepository.findMonthlyRecordsByMemberAndClub(
+                memberId, clubId, year, month);
+
+        //세션별 정보들을 리스트에 저장
+        List<MyAttendanceRecordDto.AttendanceRecordItem> items = records.stream()
+                .map(a -> new MyAttendanceRecordDto.AttendanceRecordItem(
+                        a.getSession().getId(),
+                        a.getSession().getSessionName(),
+                        a.getSession().getStartAt().toLocalDate(),
+                        a.getAttendanceStatus(),
+                        a.getCheckedAt(),
+                        a.getAdminNote()
+                ))
+                .toList();
+
+        //status별로 숫자 체크를 하기위한 Map 생성
+        Map<AttendanceStatus, Long> countMap = records.stream()
+                .collect(Collectors.groupingBy(Attendance::getAttendanceStatus, Collectors.counting()));
+
+        //Map에 있던 값들을(출석값들) DTO에 넘김
+        MyAttendanceRecordDto.StatusSummary summary = new MyAttendanceRecordDto.StatusSummary(
+                countMap.getOrDefault(AttendanceStatus.PRESENT, 0L),
+                countMap.getOrDefault(AttendanceStatus.LATE, 0L),
+                countMap.getOrDefault(AttendanceStatus.ABSENT, 0L),
+                countMap.getOrDefault(AttendanceStatus.ETC, 0L)
+        );
+
+        //출석 조회함수에서 rate만 꺼내서 dto에 넣음
+        AttendanceRateResponse response = getAttendanceRate(memberId, clubId);
+        return new MyAttendanceRecordDto(year, month, items, summary, response.rate());
+    }
+
+    @Transactional(readOnly = true)
+    public TrendResponseDto getTrend(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate) {
+        validateAdmin(adminId, clubId); //운영진 검증
+
+        LocalDateTime startAt = startDate.atStartOfDay(); //월초
+        LocalDateTime endAt = endDate.atTime(23, 59, 59); //월말
+
+        List<Object[]> rows = attendanceRepository.countBySessionAndStatus(clubId, startAt, endAt);
+
+        // 세션별로 매핑
+        Map<Long, TrendResponseDto.TrendItem> sessionMap = new LinkedHashMap<>();
+
+
+        for (Object[] row : rows) {
+            //컬럼값들을 변수에 다 담음
+            Long sessionId = ((Number) row[0]).longValue();
+            String sessionName = (String) row[1];
+            LocalDate date = ((LocalDateTime) row[2]).toLocalDate();
+            AttendanceStatus status = (AttendanceStatus) row[3];
+            long count = ((Number) row[4]).longValue();
+
+            //출석률 계산
+            sessionMap.compute(sessionId, (id, existing) -> {
+                long prevTotal = existing != null ? existing.total() : 0L;
+                long prevAttended = existing != null ? existing.attended() : 0L;
+
+                boolean isAttended = status == AttendanceStatus.PRESENT
+                        || status == AttendanceStatus.LATE
+                        || status == AttendanceStatus.ETC;
+
+                long newTotal = prevTotal + count;
+                long newAttended = prevAttended + (isAttended ? count : 0L);
+                double rate = newTotal == 0 ? 0.0 : (double) newAttended / newTotal * 100.0;
+
+                return new TrendResponseDto.TrendItem(sessionId, sessionName, date, newTotal, newAttended, rate);
+            });
+        }
+
+        return new TrendResponseDto(new ArrayList<>(sessionMap.values()));
+    }
+
+    @Transactional(readOnly = true)
+    public MemberStatsResponseDto getMemberStats(Long adminId, Long clubId) {
+        validateAdmin(adminId, clubId); //운영진 검증
+
+        List<ClubMember> members = clubMemberRepository.findByClubIdAndDeletedAtIsNull(clubId);
+
+        //멤버 리스트를 돌면서 출석률 계산하고 이 리스트에 넣음
+        List<MemberStatsResponseDto.MemberStatItem> items = members.stream()
+                .map(cm -> {
+                    AttendanceRateResponse rate = getAttendanceRate(cm.getMember().getId(), clubId);
+                    return new MemberStatsResponseDto.MemberStatItem( //getAttendanceRate로 뽑아서 채우고 나머지도 넣기
+                            cm.getMember().getId(),
+                            cm.getMember().getName(),
+                            cm.getMember().getStdId(),
+                            rate.totalSessions(),
+                            rate.attendedCount(),
+                            rate.rate()
+                    );
+                })
+                .toList();
+
+        return new MemberStatsResponseDto(items);
+    }
+
+    @Transactional(readOnly = true)
+    public DistributionResponseDto getDistribution(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate) {
+        validateAdmin(adminId, clubId); //어드민 검증
+
+        LocalDateTime startAt = startDate.atStartOfDay(); //1일
+        LocalDateTime endAt = endDate.atTime(23, 59, 59); //월 마지막날
+
+        List<Object[]> rows = attendanceRepository.countByStatusGrouped(clubId, startAt, endAt);
+
+        //map에 컬럼담아서 계산
+        Map<AttendanceStatus, Long> countMap = new HashMap<>();
+        for (Object[] row : rows) {
+            countMap.put((AttendanceStatus) row[0], ((Number) row[1]).longValue());
+        }
+
+        long present = countMap.getOrDefault(AttendanceStatus.PRESENT, 0L);
+        long late    = countMap.getOrDefault(AttendanceStatus.LATE, 0L);
+        long absent  = countMap.getOrDefault(AttendanceStatus.ABSENT, 0L);
+        long etc     = countMap.getOrDefault(AttendanceStatus.ETC, 0L);
+        long total   = present + late + absent + etc;
+
+        double presentRate = total == 0 ? 0.0 : (double) present / total * 100.0;
+        double lateRate    = total == 0 ? 0.0 : (double) late    / total * 100.0;
+        double absentRate  = total == 0 ? 0.0 : (double) absent  / total * 100.0;
+        double etcRate     = total == 0 ? 0.0 : (double) etc     / total * 100.0;
+
+        return new DistributionResponseDto(total, present, presentRate, late, lateRate, absent, absentRate, etc, etcRate);
+    }
+
+    //출석률을 파일로 뽑아내기 위한 함수
+    @Transactional(readOnly = true)
+    public ExportResponseDto getExportData(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate, Long memberId) {
+        validateAdmin(adminId, clubId);
+
+        LocalDateTime startAt = startDate.atStartOfDay();
+        LocalDateTime endAt = endDate.atTime(23, 59, 59);
+
+        List<Attendance> records = attendanceRepository.findForExport(clubId, startAt, endAt, memberId);
+
+        List<ExportResponseDto.ExportItem> items = records.stream()
+                .map(a -> new ExportResponseDto.ExportItem(
+                        a.getMember().getName(),
+                        a.getMember().getStdId(),
+                        a.getSession().getSessionName(),
+                        a.getSession().getStartAt().toLocalDate(),
+                        a.getAttendanceStatus(),
+                        a.getAdminNote()
+                ))
+                .toList();
+
+        return new ExportResponseDto(items);
     }
 }

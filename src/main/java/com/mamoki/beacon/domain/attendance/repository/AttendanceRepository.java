@@ -38,4 +38,76 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("joinedAt") LocalDateTime joinedAt,
             @Param("statuses") List<AttendanceStatus> statuses
     );
+
+    //월별 출석 기록 조회 하기위한 쿼리문
+    @Query("""
+           SELECT a FROM Attendance a
+           JOIN FETCH a.session s
+           WHERE a.member.id = :memberId
+             AND s.club.id = :clubId
+             AND s.deletedAt IS NULL
+             AND a.deletedAt IS NULL
+             AND YEAR(s.startAt) = :year
+             AND MONTH(s.startAt) = :month
+           ORDER BY s.startAt ASC
+           """)
+    List<Attendance> findMonthlyRecordsByMemberAndClub( //리스트형식으로 저장
+            @Param("memberId") Long memberId,
+            @Param("clubId") Long clubId,
+            @Param("year") int year,
+            @Param("month") int month
+    );
+
+    //세션별 상태별 인원수 가져오는 쿼리문
+    @Query("""
+       SELECT a.session.id, a.session.sessionName, a.session.startAt, a.attendanceStatus, COUNT(a)
+       FROM Attendance a
+       WHERE a.session.club.id = :clubId
+         AND a.session.deletedAt IS NULL
+         AND a.deletedAt IS NULL
+         AND a.session.startAt BETWEEN :startAt AND :endAt
+         AND a.session.sessionStatus = com.mamoki.beacon.domain.session.entity.SessionStatus.ENDED
+       GROUP BY a.session.id, a.session.sessionName, a.session.startAt, a.attendanceStatus
+       ORDER BY a.session.startAt ASC
+       """)
+    List<Object[]> countBySessionAndStatus(
+            @Param("clubId") Long clubId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt
+    );
+
+    //상태별 추이를 보기위한 쿼리문
+    @Query("""
+       SELECT a.attendanceStatus, COUNT(a)
+       FROM Attendance a
+       WHERE a.session.club.id = :clubId
+         AND a.session.deletedAt IS NULL
+         AND a.deletedAt IS NULL
+         AND a.session.startAt BETWEEN :startAt AND :endAt
+       GROUP BY a.attendanceStatus
+       """)
+    List<Object[]> countByStatusGrouped(
+            @Param("clubId") Long clubId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt
+    );
+
+    //파일로 뽑아내기 위한 쿼리문
+    @Query("""
+       SELECT a FROM Attendance a
+       JOIN FETCH a.session s
+       JOIN FETCH a.member m
+       WHERE s.club.id = :clubId
+         AND s.deletedAt IS NULL
+         AND a.deletedAt IS NULL
+         AND s.startAt BETWEEN :startAt AND :endAt
+         AND (:memberId IS NULL OR m.id = :memberId)
+       ORDER BY s.startAt ASC, m.stdId ASC
+       """)
+    List<Attendance> findForExport(
+            @Param("clubId") Long clubId,
+            @Param("startAt") LocalDateTime startAt,
+            @Param("endAt") LocalDateTime endAt,
+            @Param("memberId") Long memberId
+    );
 }
