@@ -1,4 +1,4 @@
-package com.mamoki.beacon.global;
+package com.mamoki.beacon.global.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@OpenAPIDefinition(
+@OpenAPIDefinition( // API 문서 전체 정보 정의
         info = @Info(
                 title = "비콘 API",
                 version = "v1",
@@ -18,16 +18,16 @@ import org.springframework.context.annotation.Configuration;
         servers = {
                 @Server(url = "http://localhost:8080", description = "로컬 서버"),
         },
-        security = {
+        security = { // 모든 API에 기본적으로 JWT 인증 적용
                 @SecurityRequirement(name = "bearerAuth")
         }
 )
 @SecurityScheme(
-        name = "bearerAuth",
-        type = SecuritySchemeType.HTTP,
-        scheme = "bearer",
-        bearerFormat = "JWT",
-        description = "Authrorization 헤더에 Bearer {accessToken} 형식으로 JWT 토큰을 전달하여 인증을 수행합니다."
+        name = "bearerAuth", // SecurityRequirement에서 참조하는 이름
+        type = SecuritySchemeType.HTTP, // HTTP 인증 방식
+        scheme = "bearer", // Bearer 토큰 방식
+        bearerFormat = "JWT", // 토큰 형식 설명
+        description = "Authrorization 헤더에 Bearer {accessToken} 형식으로 JWT 토큰을 전달하여 인증을 수행합니다." // Swagger UI에서 인증 토큰 입력 시 참고할 설명
 )
 public class SwaggerConfig {
 }
