@@ -1,5 +1,6 @@
 package com.mamoki.beacon.domain.member.service;
 
+import com.mamoki.beacon.domain.member.dto.fcm.FcmTokenUpdateRequest;
 import com.mamoki.beacon.domain.member.dto.password.MemberPaswordUpdateRequest;
 import com.mamoki.beacon.domain.member.dto.profile.MemberProfileResponse;
 import com.mamoki.beacon.domain.member.dto.profile.MemberProfileUpdateRequest;
@@ -49,5 +50,13 @@ public class MemberService {
         member.updateProfile(request.name(), request.pushEnabled());
 
         return member.toMemberProfileResponse();
+    }
+
+    @Transactional
+    public void updateFcmToken(Long memberId, FcmTokenUpdateRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        member.updateFcmToken(request.fcmToken());
     }
 }
