@@ -57,11 +57,6 @@ public class AuthService {
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // ③ FCM 토큰이 포함되어 있으면 갱신 (모바일 앱 로그인 케이스)
-        if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
-            member.updateFcmToken(request.fcmToken());
-        }
-
         // ④ AT/RT 발급
         String accessToken = jwtProvider.createAccessToken(member.getId());
         String refreshToken = jwtProvider.createRefreshToken(member.getId());
@@ -105,4 +100,6 @@ public class AuthService {
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         member.revokeRefreshToken();
     }
+
+
 }
