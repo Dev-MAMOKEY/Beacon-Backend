@@ -15,3 +15,7 @@ custom:
     secret-key: ${JWT_SECRET}
     access-exp-min: ${JWT_ACCESS_EXP_MIN}
     refresh-exp-day: ${JWT_REFRESH_EXP_DAY}
+
+firebase:
+  beacon-account:
+    path: firebase/beacom-98b44-firebase-adminsdk-fbsvc-acc6fb5187.json

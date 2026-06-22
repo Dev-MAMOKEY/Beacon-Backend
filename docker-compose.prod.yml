@@ -2,13 +2,12 @@ services:
   db:
     image: mysql:8.0
     container_name: beacon-db
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3306:3306"
     volumes:
       - db-data:/var/lib/mysql
     healthcheck:
@@ -18,18 +17,17 @@ services:
       retries: 5
 
   app:
-    build: .
+    # 로컬에서 빌드 후 Docker Hub에 푸시한 이미지를 풀해서 실행
+    image: ${DOCKERHUB_USERNAME}/beacon:latest
     container_name: beacon-app
+    restart: always
     ports:
       - "8081:8080"
     environment:
-      # docker profile 활성화
       SPRING_PROFILES_ACTIVE: docker
-      # MySQL 환경 변수
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      # JWT
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_EXP_MIN: ${JWT_ACCESS_EXP_MIN}
       JWT_REFRESH_EXP_DAY: ${JWT_REFRESH_EXP_DAY}
