@@ -27,6 +27,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
             // Spring Security 7 (Boot 4.x) 람다 DSL 필수 — 기존 메서드 체이닝 방식 제거됨
+            // CorsConfig의 CorsConfigurationSource Bean을 자동으로 사용
+            .cors(cors -> {})
             .csrf(csrf -> csrf.disable())
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
