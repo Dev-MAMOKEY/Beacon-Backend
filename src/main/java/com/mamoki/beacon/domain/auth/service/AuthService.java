@@ -39,7 +39,6 @@ public class AuthService {
                 new Member(
                         request.stdId(),
                         passwordEncoder.encode(request.password()),
-                        request.grade(),
                         request.name()
                 )
         );

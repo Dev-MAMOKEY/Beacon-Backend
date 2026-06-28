@@ -41,10 +41,9 @@ public class Member extends GlobalEntity {
     @Column(name = "rt_at")
     private LocalDateTime rtAt;
 
-    public Member(int stdId, String password, int grade, String name) {
+    public Member(int stdId, String password, String name) {
         this.stdId = stdId;
         this.password = password;
-        this.grade = grade;
         this.name = name;
         this.pushEnabled = true;
     }

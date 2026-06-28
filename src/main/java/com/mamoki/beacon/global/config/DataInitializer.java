@@ -38,8 +38,8 @@ public class DataInitializer {
     CommandLineRunner initMember(PasswordEncoder passwordEncoder) { // 회원 초기 데이터 삽입
         return args -> {
             if (memberRepository.count() == 0) {
-                memberRepository.save(new Member(20230001, passwordEncoder.encode("qwer1234"), 1, "사용자"));
-                memberRepository.save(new Member(20239999, passwordEncoder.encode("admin1234"), 4, "관리자"));
+                memberRepository.save(new Member(20230001, passwordEncoder.encode("qwer1234"), "사용자"));
+                memberRepository.save(new Member(20239999, passwordEncoder.encode("admin1234"), "관리자"));
             }
         };
     }
