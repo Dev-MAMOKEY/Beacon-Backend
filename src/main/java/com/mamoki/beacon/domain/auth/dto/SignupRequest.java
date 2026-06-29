@@ -14,8 +14,6 @@ public record SignupRequest (
             message = "비밀번호는 영어와 숫자를 각각 1개 이상 포함해야 합니다."
     )
     String password,
-    @NotNull(message = "학년은 필수입니다.")
-    int grade,
     @NotBlank(message = "이름은 필수입니다.")
     String name
 ) {
