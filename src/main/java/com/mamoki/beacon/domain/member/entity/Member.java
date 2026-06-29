@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -63,8 +64,8 @@ public class Member extends GlobalEntity {
         this.rtAt = null;
     }
 
-    public MemberProfileResponse toMemberProfileResponse() {
-        return new MemberProfileResponse(name, stdId, pushEnabled);
+    public MemberProfileResponse toMemberProfileResponse(List<Long> clubIds) {
+        return new MemberProfileResponse(name, clubIds, stdId, pushEnabled);
     }
 
     public void updatePassword(String newPassword) {
