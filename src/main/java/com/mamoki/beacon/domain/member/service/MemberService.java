@@ -1,5 +1,6 @@
 package com.mamoki.beacon.domain.member.service;
 
+import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
 import com.mamoki.beacon.domain.member.dto.fcm.FcmTokenUpdateRequest;
 import com.mamoki.beacon.domain.member.dto.password.MemberPaswordUpdateRequest;
 import com.mamoki.beacon.domain.member.dto.profile.MemberProfileResponse;
@@ -13,18 +14,27 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberService {
 
+    private final ClubMemberRepository clubMemberRepository;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
     public MemberProfileResponse getMyInfo(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
-        return member.toMemberProfileResponse();
+
+        // 동아리 없으면 [], 여러 개면 [1, 3, 7] — 분기 없이 자동 처리됨
+        List<Long> clubIds = clubMemberRepository.findByMember(member).stream()
+                .map(clubMember -> clubMember.getClub().getId())
+                .toList();
+
+        return member.toMemberProfileResponse(clubIds);
     }
 
     @Transactional
@@ -49,7 +59,11 @@ public class MemberService {
 
         member.updateProfile(request.name(), request.pushEnabled());
 
-        return member.toMemberProfileResponse();
+        List<Long> clubIds = clubMemberRepository.findByMember(member).stream()
+                .map(clubMember -> clubMember.getClub().getId())
+                .toList();
+
+        return member.toMemberProfileResponse(clubIds);
     }
 
     @Transactional

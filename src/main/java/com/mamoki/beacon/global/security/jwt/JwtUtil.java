@@ -1,6 +1,5 @@
 package com.mamoki.beacon.global.security.jwt;
 
-import com.mamoki.beacon.domain.club_member.entity.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

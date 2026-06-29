@@ -1,8 +1,6 @@
 package com.mamoki.beacon.domain.auth.service;
 
 import com.mamoki.beacon.domain.auth.dto.*;
-import com.mamoki.beacon.domain.club_member.entity.ClubMember;
-import com.mamoki.beacon.domain.club_member.entity.Role;
 import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
 import com.mamoki.beacon.domain.member.entity.Member;
 import com.mamoki.beacon.domain.member.repository.MemberRepository;
@@ -16,8 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -100,6 +96,4 @@ public class AuthService {
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         member.revokeRefreshToken();
     }
-
-
 }
