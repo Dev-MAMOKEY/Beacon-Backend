@@ -25,4 +25,9 @@ public record RsData<T>( // 공통 API 응답 객체
     public static <T> RsData<T> fail(ErrorCode errorCode) {
         return new RsData<>(false, null, new ErrorInfo(errorCode.getCode(), errorCode.getMessage()), LocalDateTime.now());
     }
+
+    // 실패 응답 (검증 실패처럼 상세 메시지를 직접 지정해야 할 때 사용)
+    public static <T> RsData<T> fail(ErrorCode errorCode, String message) {
+        return new RsData<>(false, null, new ErrorInfo(errorCode.getCode(), message), LocalDateTime.now());
+    }
 }

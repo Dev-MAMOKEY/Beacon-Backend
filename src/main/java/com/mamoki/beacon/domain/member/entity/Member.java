@@ -19,10 +19,7 @@ import java.util.List;
 public class Member extends GlobalEntity {
 
     @Column(name = "student_id")
-    private int stdId;
-
-    @Column(name = "grade")
-    private int grade;
+    private String stdId;
 
     @Column(name = "password_hash")
     private String password;
@@ -42,7 +39,7 @@ public class Member extends GlobalEntity {
     @Column(name = "rt_at")
     private LocalDateTime rtAt;
 
-    public Member(int stdId, String password, String name) {
+    public Member(String stdId, String password, String name) {
         this.stdId = stdId;
         this.password = password;
         this.name = name;

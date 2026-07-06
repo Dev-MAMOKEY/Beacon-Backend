@@ -8,7 +8,7 @@ import java.util.List;
 public record ExportResponseDto(List<ExportItem> data) {
     public record ExportItem(
             String memberName,
-            int stdId,
+            String stdId,
             String sessionName,
             LocalDate date,
             AttendanceStatus status,

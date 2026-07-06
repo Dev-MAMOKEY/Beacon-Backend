@@ -59,7 +59,7 @@ public class AttendanceService {
         if (session.getSessionStatus() != SessionStatus.ACTIVE) { //세션 비활성화
             throw new CustomException(ErrorCode.SESSION_NOT_ACTIVE);
         }
-        if (session.getOtpCode() == null || !passwordEncoder.matches(otpCode.toUpperCase(), session.getOtpCode())) { // otp값 없거나 틀릴때
+        if (session.getOtpCode() == null || !passwordEncoder.matches(otpCode, session.getOtpCode())) { // otp값 없거나 틀릴때
             throw new CustomException(ErrorCode.INVALID_ATTENDANCE_CODE);
         }
 
@@ -105,42 +105,6 @@ public class AttendanceService {
                     member.getFcmToken()
             );
         }
-    }
-
-    @Transactional //출석 종료함수 (종료 시 otp 널로 변경 후 출석안된 사용자 ABSENT로 변경)
-    public void closeAttendance(Long sessionId) {
-        Session session = sessionRepository.findByIdAndDeletedAtIsNull(sessionId)
-                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
-
-        // 세션은 ACTIVED 유지, otp값만 null로 변경 (이유 : otp값이 남아있으면 출석요청 보낼 수 있으니까)
-        session.setOtpCode(null);
-        sessionRepository.save(session);
-
-        //출석 ABSENT 처리하기 위해 동아리 인원들 전부 List로 뽑음
-        List<ClubMember> clubMembers =
-                clubMemberRepository.findByClubIdAndDeletedAtIsNull(session.getClub().getId());
-
-        //출석한 애들은 여기에 저장
-        Set<Long> attendedIds = attendanceRepository.findBySession(session).stream()
-                .map(a -> a.getMember().getId())
-                .collect(Collectors.toSet());
-
-        LocalDateTime now = LocalDateTime.now();
-
-        //출석하지 못한 애들은 ABSENT로 저장
-        List<Attendance> absentList = clubMembers.stream()
-                .filter(cm -> !attendedIds.contains(cm.getMember().getId()))
-                .map(cm -> Attendance.builder()
-                        .member(cm.getMember())
-                        .session(session)
-                        .attendanceStatus(AttendanceStatus.ABSENT)
-                        .isManual(false)
-                        .createdAt(now)
-                        .updatedAt(now)
-                        .build())
-                .collect(Collectors.toList());
-
-        attendanceRepository.saveAll(absentList);
     }
 
     @Transactional //관리자 수동 출석

@@ -6,7 +6,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 
 public class TotpUtil {
-    private static final String CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String CHARSET = "0123456789";
     private static final int SESSION_OTP_DIGITS = 4;
 
     public static String generateSessionOtp(String secret) throws Exception {

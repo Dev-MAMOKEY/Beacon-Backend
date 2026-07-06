@@ -2,6 +2,7 @@ package com.mamoki.beacon.domain.session.controller;
 
 import com.mamoki.beacon.domain.session.dto.SessionCreateRequestDto;
 import com.mamoki.beacon.domain.session.dto.SessionDto;
+import com.mamoki.beacon.domain.session.dto.SessionResponseDto;
 import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
 import com.mamoki.beacon.domain.session.entity.SessionStatus;
@@ -55,14 +56,16 @@ public class SessionController {
     @ApiResponse(responseCode = "200", description = "세션 목록 조회 성공")
     @ApiMemberErrorResponse
     @GetMapping
-    public ResponseEntity<RsData<Slice<Session>>> getSessions(
+    public ResponseEntity<RsData<Slice<SessionResponseDto>>> getSessions(
             @AuthenticationPrincipal Long memberId,
             @PathVariable Long clubId,
             @RequestParam(required = false) SessionStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Slice<Session> sessions = sessionService.getSessionsByClub(clubId, status, pageable);
+        // 엔티티를 그대로 직렬화하면 LAZY 프록시(club 등) 오류가 나서 DTO로 변환해 반환
+        Slice<SessionResponseDto> sessions = sessionService.getSessionsByClub(clubId, status, pageable)
+                .map(SessionResponseDto::from);
         return ResponseEntity.ok().body(RsData.success(sessions));
     }
 
@@ -74,11 +77,11 @@ public class SessionController {
             @ExampleObject(value = SwaggerErrorExamples.SESSION_NOT_ACTIVE)))
     @ApiMemberErrorResponse
     @GetMapping("/active")
-    public ResponseEntity<RsData<Session>> getActiveSession(
+    public ResponseEntity<RsData<SessionResponseDto>> getActiveSession(
             @AuthenticationPrincipal Long memberId,
             @PathVariable Long clubId) {
         Session session = sessionService.getActiveSession(memberId, clubId);
-        return ResponseEntity.ok().body(RsData.success(session));
+        return ResponseEntity.ok().body(RsData.success(SessionResponseDto.from(session)));
     }
 
     @Operation(summary = "세션 상세 조회", description = "세션 ID로 세션 상세 정보를 조회합니다.",
@@ -89,12 +92,12 @@ public class SessionController {
             @ExampleObject(value = SwaggerErrorExamples.SESSION_NOT_FOUND)))
     @ApiMemberErrorResponse
     @GetMapping("/{sessionId}")
-    public ResponseEntity<RsData<Session>> getSession(
+    public ResponseEntity<RsData<SessionResponseDto>> getSession(
             @AuthenticationPrincipal Long memberId,
             @PathVariable Long clubId,
             @PathVariable Long sessionId) {
         Session session = sessionService.getSessionDetail(memberId, clubId, sessionId);
-        return ResponseEntity.ok().body(RsData.success(session));
+        return ResponseEntity.ok().body(RsData.success(SessionResponseDto.from(session)));
     }
 
     @Operation(summary = "세션 수정", description = "세션 이름, 예정 시작/종료 시간을 수정합니다. 종료된 세션은 수정 불가합니다. ADMIN만 가능합니다.",

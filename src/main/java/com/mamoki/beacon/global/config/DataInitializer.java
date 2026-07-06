@@ -38,8 +38,8 @@ public class DataInitializer {
     CommandLineRunner initMember(PasswordEncoder passwordEncoder) { // 회원 초기 데이터 삽입
         return args -> {
             if (memberRepository.count() == 0) {
-                memberRepository.save(new Member(20230001, passwordEncoder.encode("qwer1234"), "사용자"));
-                memberRepository.save(new Member(20239999, passwordEncoder.encode("admin1234"), "관리자"));
+                memberRepository.save(new Member("20230001", passwordEncoder.encode("qwer1234"), "사용자"));
+                memberRepository.save(new Member("20239999", passwordEncoder.encode("admin1234"), "관리자"));
             }
         };
     }
@@ -74,9 +74,9 @@ public class DataInitializer {
                 // 초기 데이터로 회원과 동아리를 조회하여 ClubMember 엔티티를 생성
 
                 // 회원 조회
-                Member member = memberRepository.findByStdId(20230001)
+                Member member = memberRepository.findByStdId("20230001")
                         .orElseThrow(() -> new RuntimeException("회원이 존재하지 않습니다."));
-                Member admin = memberRepository.findByStdId(20239999)
+                Member admin = memberRepository.findByStdId("20239999")
                         .orElseThrow(() -> new RuntimeException("관리자가 존재하지 않습니다."));
 
                 // 동아리 조회

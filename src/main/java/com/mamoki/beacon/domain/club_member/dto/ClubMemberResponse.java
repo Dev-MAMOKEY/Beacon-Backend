@@ -5,7 +5,7 @@ import com.mamoki.beacon.domain.club_member.entity.Role;
 public record ClubMemberResponse(
         Long memberId,
         String name,
-        int stdId,
+        String stdId,
         Role role,
         double rate
 ) {

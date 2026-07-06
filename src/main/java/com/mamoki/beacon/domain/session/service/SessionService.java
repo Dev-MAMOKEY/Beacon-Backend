@@ -25,7 +25,6 @@ import com.mamoki.beacon.global.util.TotpUtil;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
@@ -47,7 +46,6 @@ public class SessionService {
     private final ClubMemberRepository clubMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final AttendanceService attendanceService;
-    private final TaskScheduler taskScheduler;
     private final FcmService fcmService;
 
     @Transactional
@@ -198,12 +196,6 @@ public class SessionService {
         session.setSessionStatus(SessionStatus.ACTIVE);
         session.setStartAt(LocalDateTime.now());
         sessionRepository.save(session);
-
-        //시간 지나면 자동으로 출석 종료 함수 실행할 수 있는 스케쥴러
-        taskScheduler.schedule(
-                () -> attendanceService.closeAttendance(session.getId()),  // 할 일
-                Instant.now().plus(Duration.ofMinutes(1))                  // 언제
-        );
 
         //세션 시작 알림: 동아리 전체 멤버에게 FCM 멀티캐스트 발송
         List<String> tokens = clubMemberRepository

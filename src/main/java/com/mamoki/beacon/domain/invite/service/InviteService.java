@@ -26,7 +26,7 @@ public class InviteService {
     private final ClubMemberRepository clubMemberRepository;
 
     private static final String CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final int CODE_LENGTH = 6;
+    private static final int CODE_LENGTH = 4;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     //관리자 검증 함수
