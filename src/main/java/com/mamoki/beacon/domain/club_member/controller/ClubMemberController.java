@@ -1,5 +1,6 @@
 package com.mamoki.beacon.domain.club_member.controller;
 
+import com.mamoki.beacon.domain.club_member.dto.ClubMemberResponse;
 import com.mamoki.beacon.domain.club_member.dto.RoleUpdateRequest;
 import com.mamoki.beacon.domain.club_member.service.ClubMemberService;
 import com.mamoki.beacon.global.rsdata.RsData;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "ClubMember", description = "동아리 멤버 API")
 @RestController
@@ -32,7 +35,7 @@ public class ClubMemberController {
             @ExampleObject(value = SwaggerErrorExamples.MEMBER_NOT_FOUND)))
     @ApiAdminErrorResponse
     @GetMapping("/{clubId}/members")
-    public ResponseEntity<RsData> getClubMembers(
+    public ResponseEntity<RsData<List<ClubMemberResponse>>> getClubMembers( // 제네릭 명시해야 Swagger(OpenAPI)에 data 타입이 반영됨
             @PathVariable("clubId") Long clubId,
             @AuthenticationPrincipal Long requesterId,
             @RequestParam(required = false) String search) {
@@ -53,7 +56,7 @@ public class ClubMemberController {
         }))
     @ApiAdminErrorResponse
     @PatchMapping("/{clubId}/members/{memberId}/role")
-    public ResponseEntity<RsData> updateRole(@PathVariable("clubId") Long clubId, @PathVariable("memberId") Long memberId, @AuthenticationPrincipal Long requesterId, @RequestBody RoleUpdateRequest request) {
+    public ResponseEntity<RsData<Void>> updateRole(@PathVariable("clubId") Long clubId, @PathVariable("memberId") Long memberId, @AuthenticationPrincipal Long requesterId, @RequestBody RoleUpdateRequest request) {
         request = new RoleUpdateRequest(requesterId, clubId, memberId, request.newRole());
         clubMemberService.updateRole(request);
         return ResponseEntity.ok().body(RsData.success(null));
@@ -67,7 +70,7 @@ public class ClubMemberController {
             @ExampleObject(value = SwaggerErrorExamples.NOT_CLUB_MEMBER)))
     @ApiAdminErrorResponse
     @DeleteMapping("/{clubId}/members/{memberId}")
-    public ResponseEntity<RsData> softdeletedMember(@PathVariable("clubId") Long clubId, @PathVariable("memberId") Long memberId, @AuthenticationPrincipal Long requesterId) {
+    public ResponseEntity<RsData<Void>> softdeletedMember(@PathVariable("clubId") Long clubId, @PathVariable("memberId") Long memberId, @AuthenticationPrincipal Long requesterId) {
         clubMemberService.softdeletedMember(requesterId, clubId, memberId);
         return ResponseEntity.ok().body(RsData.success(null));
     }
