@@ -7,6 +7,8 @@ public record ClubMemberResponse(
         String name,
         String stdId,
         Role role,
-        double rate
+        double rate,
+        Long attendanceCount,
+        String part
 ) {
 }

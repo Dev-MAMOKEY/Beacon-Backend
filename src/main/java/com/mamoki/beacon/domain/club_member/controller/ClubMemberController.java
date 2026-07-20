@@ -1,6 +1,7 @@
 package com.mamoki.beacon.domain.club_member.controller;
 
 import com.mamoki.beacon.domain.club_member.dto.ClubMemberResponse;
+import com.mamoki.beacon.domain.club_member.dto.PartUpdateRequest;
 import com.mamoki.beacon.domain.club_member.dto.RoleUpdateRequest;
 import com.mamoki.beacon.domain.club_member.service.ClubMemberService;
 import com.mamoki.beacon.global.rsdata.RsData;
@@ -57,8 +58,24 @@ public class ClubMemberController {
     @ApiAdminErrorResponse
     @PatchMapping("/{clubId}/members/{memberId}/role")
     public ResponseEntity<RsData<Void>> updateRole(@PathVariable("clubId") Long clubId, @PathVariable("memberId") Long memberId, @AuthenticationPrincipal Long requesterId, @RequestBody RoleUpdateRequest request) {
-        request = new RoleUpdateRequest(requesterId, clubId, memberId, request.newRole());
+        request = new RoleUpdateRequest(clubId, requesterId, memberId, request.newRole());
         clubMemberService.updateRole(request);
+        return ResponseEntity.ok().body(RsData.success(null));
+    }
+
+    @Operation(summary = "멤버 파트 변경", description = "동아리 멤버의 파트(예: 프론트엔드/기획/디자인/백엔드)를 지정합니다. ADMIN만 가능합니다.",
+        security = @SecurityRequirement(name = "BearerAuth"))
+    @ApiResponse(responseCode = "200", description = "파트 변경 성공")
+    @ApiResponse(responseCode = "404", description = "회원이 존재하지 않거나 대상이 동아리 멤버가 아닌 경우",
+        content = @Content(mediaType = "application/json", examples = {
+            @ExampleObject(name = "MEMBER_NOT_FOUND", value = SwaggerErrorExamples.MEMBER_NOT_FOUND),
+            @ExampleObject(name = "NOT_CLUB_MEMBER",  value = SwaggerErrorExamples.NOT_CLUB_MEMBER)
+        }))
+    @ApiAdminErrorResponse
+    @PatchMapping("/{clubId}/members/{memberId}/part")
+    public ResponseEntity<RsData<Void>> updatePart(@PathVariable("clubId") Long clubId, @PathVariable("memberId") Long memberId, @AuthenticationPrincipal Long requesterId, @RequestBody PartUpdateRequest request) {
+        request = new PartUpdateRequest(clubId, requesterId, memberId, request.newPart());
+        clubMemberService.updatePart(request);
         return ResponseEntity.ok().body(RsData.success(null));
     }
 

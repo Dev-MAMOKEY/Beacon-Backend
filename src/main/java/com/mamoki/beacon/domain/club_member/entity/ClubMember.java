@@ -34,6 +34,12 @@ public class ClubMember extends GlobalEntity { // GlobalEntity를 상속해서 s
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(name = "attendance_count")
+    private Long attendanceCount;
+
+    @Column(name = "part")
+    private String part;
+
     @Column(name = "joined_at")
     private LocalDateTime joinedAt;
 
@@ -47,5 +53,10 @@ public class ClubMember extends GlobalEntity { // GlobalEntity를 상속해서 s
     // 역할 변경을 위한 메서드
     public void updateRole(Role newRole) {
         this.role = newRole;
+    }
+
+    // 파트 변경을 위한 메서드
+    public void updatePart(String newPart) {
+        this.part = newPart;
     }
 }

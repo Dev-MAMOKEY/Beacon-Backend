@@ -1,6 +1,8 @@
 package com.mamoki.beacon.domain.club_member.service;
 
+import com.mamoki.beacon.domain.attendance.dto.AttendanceRateResponse;
 import com.mamoki.beacon.domain.club_member.dto.ClubMemberResponse;
+import com.mamoki.beacon.domain.club_member.dto.PartUpdateRequest;
 import com.mamoki.beacon.domain.club_member.dto.RoleUpdateRequest;
 import com.mamoki.beacon.domain.club_member.entity.ClubMember;
 import com.mamoki.beacon.domain.club_member.entity.Role;
@@ -57,14 +59,18 @@ public class ClubMemberService {
                     String stdId = String.valueOf(cm.getMember().getStdId());
                     return name.contains(keyword) || stdId.contains(keyword);
                 })
-                .map(cm -> new ClubMemberResponse(
-                        cm.getMember().getId(),
-                        cm.getMember().getName(),
-                        cm.getMember().getStdId(),
-                        cm.getRole(),
-                        attendanceService.getAttendanceRate(
-                                cm.getMember().getId(), clubId).rate()
-                ))
+                .map(cm -> {
+                    AttendanceRateResponse rate = attendanceService.getAttendanceRate(cm.getMember().getId(), clubId);
+                    return new ClubMemberResponse(
+                            cm.getMember().getId(),
+                            cm.getMember().getName(),
+                            cm.getMember().getStdId(),
+                            cm.getRole(),
+                            rate.rate(),
+                            rate.attendedCount(),
+                            cm.getPart()
+                    );
+                })
                 .toList();
     }
 
@@ -83,6 +89,17 @@ public class ClubMemberService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
 
         target.updateRole(request.newRole());
+    }
+
+    // 파트 변경
+    @Transactional
+    public void updatePart(PartUpdateRequest request) {
+        validateAdmin(request.requesterId(), request.clubId());
+
+        ClubMember target = clubMemberRepository.findByMemberIdAndClubId(request.targetMemberId(), request.clubId())
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+
+        target.updatePart(request.newPart());
     }
 
     // 멤버 제명

@@ -62,6 +62,11 @@ public class SessionService {
 
         // 반복 옵션이 있으면 여러 개, 없으면 단일 생성
         if (Boolean.TRUE.equals(request.isRepeat())) {
+            if (request.sessionRepeatType() == SessionRepeatType.WEEKLY
+                    && (request.daysOfWeek() == null || request.daysOfWeek().isEmpty())) {
+                throw new CustomException(ErrorCode.INVALID_INPUT);
+            }
+
             List<LocalDate> dates = new ArrayList<>();
             LocalDate date = request.expectStartAt().toLocalDate();
             while (!date.isAfter(request.repeatEndDate())) {

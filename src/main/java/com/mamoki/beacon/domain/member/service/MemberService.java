@@ -57,7 +57,7 @@ public class MemberService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
-        member.updateProfile(request.name(), request.pushEnabled());
+        member.updateProfile(request.name(), request.title(), request.pushEnabled());
 
         List<Long> clubIds = clubMemberRepository.findByMember(member).stream()
                 .map(clubMember -> clubMember.getClub().getId())

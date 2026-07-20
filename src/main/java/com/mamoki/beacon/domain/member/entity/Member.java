@@ -27,6 +27,9 @@ public class Member extends GlobalEntity {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "title")
+    private String title;
+
     @Column(name = "fcm_token")
     private String fcmToken;
 
@@ -61,7 +64,7 @@ public class Member extends GlobalEntity {
     }
 
     public MemberProfileResponse toMemberProfileResponse(List<Long> clubIds) {
-        return new MemberProfileResponse(name, clubIds, stdId, pushEnabled);
+        return new MemberProfileResponse(name, clubIds, stdId, title, pushEnabled);
     }
 
     public void updatePassword(String newPassword) {
@@ -72,8 +75,9 @@ public class Member extends GlobalEntity {
         this.fcmToken = fcmToken;
     }
 
-    public void updateProfile(String newName, Boolean changePushEnabled) {
+    public void updateProfile(String newName, String newTitle, Boolean changePushEnabled) {
         this.name = newName;
+        this.title = newTitle;
         this.pushEnabled = changePushEnabled;
     }
 }
