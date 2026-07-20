@@ -1,6 +1,7 @@
 package com.mamoki.beacon.domain.session.dto;
 
 import com.mamoki.beacon.domain.session.entity.Session;
+import com.mamoki.beacon.domain.session.entity.SessionCategory;
 import com.mamoki.beacon.domain.session.entity.SessionStatus;
 
 import java.time.LocalDateTime;
@@ -10,6 +11,9 @@ public record SessionResponseDto(
         Long sessionId,
         String sessionName,
         SessionStatus status,
+        SessionCategory category, // 세션 카테고리 (추가 필드)
+        String location, // 세션 카드 장소? (추가된 필드)
+        String description, // 세션 카드 설명? (추가된 필드)
         LocalDateTime expectStartAt, // 예정 시작 시각
         LocalDateTime expectEndAt,   // 예정 종료 시각
         LocalDateTime startAt,       // 실제 시작 시각 (시작 전이면 null)
@@ -21,6 +25,9 @@ public record SessionResponseDto(
                 session.getId(),
                 session.getSessionName(),
                 session.getSessionStatus(),
+                session.getSessionCategory(),
+                session.getLocation(),
+                session.getDescription(),
                 session.getExpectStartAt(),
                 session.getExpectEndAt(),
                 session.getStartAt(),

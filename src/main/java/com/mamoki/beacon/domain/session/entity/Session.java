@@ -20,6 +20,16 @@ public class Session extends GlobalEntity {
     @Column(name = "session_name")
     private String sessionName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "session_category")
+    private SessionCategory sessionCategory;
+
+    @Column(name = "location")
+    private String location;
+
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "expect_start_at")
     private LocalDateTime expectStartAt;
 

@@ -9,6 +9,7 @@ COPY gradle gradle
 COPY build.gradle .
 COPY settings.gradle .
 
+RUN chmod +x gradlew
 # 의존성 다운로드
 RUN ./gradlew dependencies --no-daemon
 

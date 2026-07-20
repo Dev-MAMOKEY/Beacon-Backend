@@ -16,6 +16,7 @@ import com.mamoki.beacon.domain.session.dto.SessionCreateRequestDto;
 import com.mamoki.beacon.domain.session.dto.SessionDto;
 import com.mamoki.beacon.domain.session.dto.SessionStartDto;
 import com.mamoki.beacon.domain.session.entity.Session;
+import com.mamoki.beacon.domain.session.entity.SessionRepeatType;
 import com.mamoki.beacon.domain.session.entity.SessionStatus;
 import com.mamoki.beacon.domain.session.repository.SessionRepository;
 import com.mamoki.beacon.global.exception.CustomException;
@@ -64,7 +65,9 @@ public class SessionService {
             List<LocalDate> dates = new ArrayList<>();
             LocalDate date = request.expectStartAt().toLocalDate();
             while (!date.isAfter(request.repeatEndDate())) {
-                if (date.getDayOfWeek() == request.dayOfWeek()) {
+                boolean matches = request.sessionRepeatType() == SessionRepeatType.DAILY
+                        || request.daysOfWeek().contains(date.getDayOfWeek());
+                if (matches) {
                     dates.add(date);
                 }
                 date = date.plusDays(1);
@@ -79,6 +82,9 @@ public class SessionService {
                             .expectStartAt(LocalDateTime.of(d, startTime))
                             .expectEndAt(LocalDateTime.of(d, endTime))
                             .sessionStatus(SessionStatus.SCHEDULED)
+                            .sessionCategory(request.sessionCategory())
+                            .location(request.location())
+                            .description(request.description())
                             .uuid(UUID.randomUUID().toString())
                             .member(member)
                             .club(club)
@@ -96,6 +102,9 @@ public class SessionService {
                     .uuid(UUID.randomUUID().toString())
                     .member(member)
                     .club(club)
+                    .sessionCategory(request.sessionCategory())
+                    .location(request.location())
+                    .description(request.description())
                     .build());
         }
     }
@@ -164,6 +173,15 @@ public class SessionService {
         }
         if (sessionDto.getExpectEndAt() != null) {
             session.setExpectEndAt(sessionDto.getExpectEndAt());
+        }
+        if (sessionDto.getSessionCategory() != null) {
+            session.setSessionCategory(sessionDto.getSessionCategory());
+        }
+        if (sessionDto.getLocation() != null) {
+            session.setLocation(sessionDto.getLocation());
+        }
+        if (sessionDto.getDescription() != null) {
+            session.setDescription(sessionDto.getDescription());
         }
 
         sessionRepository.save(session);
