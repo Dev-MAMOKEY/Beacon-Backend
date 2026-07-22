@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class AttendanceController {
     private final AttendanceService attendanceService;
 
-    @Operation(summary = "출석 체크", description = "OTP 코드를 입력하여 출석을 처리합니다. 세션 시작 후 5분 이내 출석 시 PRESENT, 이후 LATE로 처리됩니다.",
+    @Operation(summary = "출석 체크", description = "OTP 코드를 입력하여 출석을 처리합니다. 세션 시작 후 비콘 설정의 지각 기준 시간(기본 10분) 이내 출석 시 PRESENT, 이후 LATE로 처리됩니다.",
         security = @SecurityRequirement(name = "BearerAuth"))
     @ApiResponse(responseCode = "201", description = "출석 처리 성공")
     @ApiResponse(responseCode = "400", description = "세션이 활성화 상태가 아니거나 OTP 코드가 올바르지 않은 경우",
