@@ -4,6 +4,7 @@ import com.mamoki.beacon.domain.attendance.dto.*;
 import com.mamoki.beacon.domain.attendance.entity.Attendance;
 import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
 import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
+import com.mamoki.beacon.domain.beacon_config.repository.BeaconConfigRepository;
 import com.mamoki.beacon.domain.club_member.entity.ClubMember;
 import com.mamoki.beacon.domain.club_member.entity.Role;
 import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
@@ -36,8 +37,10 @@ public class AttendanceService {
     private final ClubMemberRepository clubMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final FcmService fcmService;
+    private final AttendanceStreamService attendanceStreamService;
+    private final BeaconConfigRepository beaconConfigRepository;
 
-    private static final long LATE_MINUTES = 5; //지각 시간
+    private static final long DEFAULT_LATE_THRESHOLD_MINUTES = 10; //지각 기준 기본값 (비콘 설정이 없을 때, 명세서 14-6)
 
     //관리자 검증 함수
     public void validateAdmin(Long requesterId, Long clubId) {
@@ -72,8 +75,13 @@ public class AttendanceService {
 
         LocalDateTime now = LocalDateTime.now();
 
+        //지각 기준은 동아리별 비콘 설정(lateThresholdMinutes)을 따름
+        long lateMinutes = beaconConfigRepository.findByClubId(clubId)
+                .map(config -> config.getLateThresholdMinutes().longValue())
+                .orElse(DEFAULT_LATE_THRESHOLD_MINUTES);
+
         AttendanceStatus status =
-                now.isAfter(session.getStartAt().plusMinutes(LATE_MINUTES)) //시작시간 + 지각시간일때
+                now.isAfter(session.getStartAt().plusMinutes(lateMinutes)) //시작시간 + 지각시간일때
                         ? AttendanceStatus.LATE //true면 지각
                         : AttendanceStatus.PRESENT;//false면
 
@@ -86,6 +94,11 @@ public class AttendanceService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
+
+        //대시보드 실시간 피드(SSE)로 출석 이벤트 발송
+        attendanceStreamService.publish(clubId, new AttendanceFeedDto(
+                member.getId(), member.getName(), member.getStdId(),
+                session.getId(), session.getSessionName(), status, now));
 
         //출석한 사람한테만 출석완료되었다고 푸시알림
         if (Boolean.TRUE.equals(member.getPushEnabled())
@@ -144,6 +157,11 @@ public class AttendanceService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
+
+        //수동 출석도 실시간 피드로 발송
+        attendanceStreamService.publish(clubId, new AttendanceFeedDto(
+                target.getId(), target.getName(), target.getStdId(),
+                session.getId(), session.getSessionName(), status, now));
     }
 
     @Transactional //관리자가 직접 출석 상태를 변경하는 함수
@@ -181,6 +199,7 @@ public class AttendanceService {
     }
 
     //출석 조회 함수
+    @Transactional(readOnly = true) //LAZY 연관(member) 접근을 위해 필요 (없으면 LazyInitializationException 500)
     public Slice<AttendanceDto> getSessionAttendance(
             Long adminId, Long clubId, Long sessionId, Pageable pageable) {
 
@@ -357,5 +376,35 @@ public class AttendanceService {
                 .toList();
 
         return new ExportResponseDto(items);
+    }
+
+    //대시보드 상단 요약 카드 (오늘 출석/지각, 전체 인원, 평균 출석률)
+    @Transactional(readOnly = true)
+    public SummaryResponseDto getSummary(Long adminId, Long clubId) {
+        validateAdmin(adminId, clubId);
+
+        //오늘 0시 ~ 내일 0시 직전까지의 출석을 상태별로 집계
+        LocalDate today = LocalDate.now();
+        List<Object[]> rows = attendanceRepository.countByStatusGrouped(
+                clubId, today.atStartOfDay(), today.atTime(23, 59, 59));
+
+        long todayPresent = 0L;
+        long todayLate = 0L;
+        for (Object[] row : rows) {
+            AttendanceStatus status = (AttendanceStatus) row[0];
+            long count = ((Number) row[1]).longValue();
+            if (status == AttendanceStatus.PRESENT) todayPresent = count;
+            if (status == AttendanceStatus.LATE) todayLate = count;
+        }
+
+        //전체 멤버 수 + 평균 출석률 (기존 멤버별 출석률 로직 재사용)
+        List<MemberStatsResponseDto.MemberStatItem> memberStats = getMemberStats(adminId, clubId).members();
+        long totalMembers = memberStats.size();
+        double avgRate = memberStats.stream()
+                .mapToDouble(MemberStatsResponseDto.MemberStatItem::attendanceRate)
+                .average()
+                .orElse(0.0);
+
+        return new SummaryResponseDto(todayPresent, todayLate, totalMembers, avgRate);
     }
 }

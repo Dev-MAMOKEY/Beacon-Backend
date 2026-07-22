@@ -2,6 +2,7 @@ package com.mamoki.beacon.domain.attendance.controller;
 
 import com.mamoki.beacon.domain.attendance.dto.DistributionResponseDto;
 import com.mamoki.beacon.domain.attendance.dto.MemberStatsResponseDto;
+import com.mamoki.beacon.domain.attendance.dto.SummaryResponseDto;
 import com.mamoki.beacon.domain.attendance.dto.TrendResponseDto;
 import com.mamoki.beacon.domain.attendance.service.AttendanceService;
 import com.mamoki.beacon.global.rsdata.RsData;
@@ -47,6 +48,17 @@ public class StatsController {
             @AuthenticationPrincipal Long adminId,
             @PathVariable Long clubId) {
         return ResponseEntity.ok(RsData.success(attendanceService.getMemberStats(adminId, clubId)));
+    }
+
+    @Operation(summary = "대시보드 요약 조회", description = "오늘 출석/지각 수, 전체 멤버 수, 평균 출석률을 조회합니다. ADMIN만 가능합니다.",
+        security = @SecurityRequirement(name = "BearerAuth"))
+    @ApiResponse(responseCode = "200", description = "대시보드 요약 조회 성공")
+    @ApiAdminErrorResponse
+    @GetMapping("/summary")
+    public ResponseEntity<RsData<SummaryResponseDto>> getSummary(
+            @AuthenticationPrincipal Long adminId,
+            @PathVariable Long clubId) {
+        return ResponseEntity.ok(RsData.success(attendanceService.getSummary(adminId, clubId)));
     }
 
     @Operation(summary = "출석 상태별 분포 조회", description = "기간 내 PRESENT / LATE / ABSENT / ETC 상태별 건수와 비율을 조회합니다. ADMIN만 가능합니다.",
