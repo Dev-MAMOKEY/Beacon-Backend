@@ -38,7 +38,7 @@ public class InviteService {
         }
     }
 
-    //6자리 랜덤 영숫자 생성
+    //4자리 랜덤 영숫자 생성
     private String generateRandomCode() {
         StringBuilder sb = new StringBuilder(CODE_LENGTH);
         for (int i = 0; i < CODE_LENGTH; i++) {
