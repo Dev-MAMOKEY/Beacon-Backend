@@ -12,8 +12,15 @@ public enum ErrorCode {
 
     // 인증 관련 예외 처리 (401)
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "학번 또는 비밀번호가 올바르지 않습니다."),
+
+    // ── Access Token 관련 : 프론트는 이 코드들을 받으면 "재발급(/auth/refresh) 시도" ──
+    TOKEN_MISSING(HttpStatus.UNAUTHORIZED, "TOKEN_MISSING", "인증 토큰이 없습니다."), // Authorization 헤더 자체가 없는 경우
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "TOKEN_EXPIRED", "Access Token이 만료되었습니다."),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "TOKEN_INVALID", "토큰 형식이 잘못되었거나 서명이 유효하지 않습니다."),
+
+    // ── Refresh Token 관련 : 프론트는 이 코드들을 받으면 "재발급 포기 → 재로그인" ──
+    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "REFRESH_TOKEN_EXPIRED", "Refresh Token이 만료되었습니다. 다시 로그인해주세요."),
+    REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "REFRESH_TOKEN_INVALID", "Refresh Token 형식이 잘못되었거나 서명이 유효하지 않습니다."),
     REFRESH_TOKEN_REVOKED(HttpStatus.UNAUTHORIZED, "REFRESH_TOKEN_REVOKED", "이미 무효화된 Refresh Token입니다."),
     PASSWORD_CONFIRMATION_MISMATCH(HttpStatus.UNAUTHORIZED, "PASSWORD_MISMATCH", "현재 비밀번호가 일치하지 않습니다."),
 

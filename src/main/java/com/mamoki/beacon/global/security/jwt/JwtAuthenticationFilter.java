@@ -29,8 +29,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // 중복 �
 
     private static final String BEARER_PREFIX = "Bearer "; // Authorization 헤더에서 토큰을 추출할 때 사용되는 접두사 선언
 
+    // 토큰 검증을 아예 건너뛰는 경로 (SecurityConfig의 permitAll 경로와 짝을 이룸)
+    // 특히 /auth/refresh 는 "AT가 만료된 상태"에서 부르는 API인데,
+    // 프론트 인터셉터가 만료된 AT를 습관적으로 헤더에 실어 보내면
+    // 이 필터가 컨트롤러 도달 전에 TOKEN_EXPIRED로 끊어버려 재발급이 영원히 불가능해진다.
+    private static final List<String> NO_AUTH_PATHS = List.of(
+            "/api/v1/auth/signup",
+            "/api/v1/auth/login",
+            "/api/v1/auth/refresh"
+    );
+
     private final JwtUtil jwtUtil;
     private final ObjectMapper objectMapper; // Java 객체를 JSON으로 변환하기 위해 사용
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return NO_AUTH_PATHS.contains(request.getRequestURI());
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

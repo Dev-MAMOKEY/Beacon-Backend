@@ -8,6 +8,7 @@ import com.mamoki.beacon.global.exception.CustomException;
 import com.mamoki.beacon.global.exception.ErrorCode;
 import com.mamoki.beacon.global.security.jwt.JwtProvider;
 import com.mamoki.beacon.global.security.jwt.JwtUtil;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
@@ -63,14 +64,24 @@ public class AuthService {
     @Transactional
     public TokenResponse reissue(ReissueTokenRequest request) {
         // ① RT 파싱 및 서명/만료 검증
+        //    이 API는 "AT가 만료됐을 때" 부르는 곳이므로 AT는 전혀 보지 않는다.
+        //    검증 대상은 오직 body의 refreshToken이며, 실패 시 REFRESH_TOKEN_* 코드로 응답해
+        //    프론트가 "재발급 재시도"가 아니라 "재로그인"으로 분기할 수 있게 한다.
         Long memberId;
+        Claims claims;
         try {
-            memberId = jwtUtil.getMemberId(request.refreshToken());
+            claims = jwtUtil.parseClaims(request.refreshToken());
         } catch (ExpiredJwtException e) {
-            throw new CustomException(ErrorCode.TOKEN_EXPIRED);
-        } catch (JwtException e) {
-            throw new CustomException(ErrorCode.TOKEN_INVALID);
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_EXPIRED); // RT 만료 → 재로그인
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID); // 서명/형식 오류 → 재로그인
         }
+
+        // ①-2 토큰 종류 검증 (AT를 refreshToken 자리에 실어 보낸 경우 차단)
+        if (!"refresh".equals(jwtUtil.getTokenType(claims))) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+        memberId = Long.parseLong(claims.getSubject());
 
         // ② 회원 조회
         Member member = memberRepository.findById(memberId)

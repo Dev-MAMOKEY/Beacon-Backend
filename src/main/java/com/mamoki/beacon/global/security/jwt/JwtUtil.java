@@ -41,6 +41,12 @@ public class JwtUtil {
         return Long.parseLong(parseClaims(token).getSubject());
     }
 
+    // 토큰 종류("access" / "refresh") 추출 메서드
+    // 발급 시 JwtProvider가 넣어준 type 클레임을 읽어, AT를 RT 자리에 잘못 보낸 요청을 걸러내는 데 사용
+    public String getTokenType(Claims claims) {
+        return claims.get("type", String.class);
+    }
+
     public SecretKey getSecretKey() {
         return secretKey;
     }

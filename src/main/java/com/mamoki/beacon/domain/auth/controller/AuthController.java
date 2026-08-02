@@ -59,14 +59,24 @@ public class AuthController {
         return ResponseEntity.ok(RsData.success(response));
     }
 
-    @Operation(summary = "토큰 재발급", description = "Refresh Token으로 새로운 Access Token과 Refresh Token을 재발급합니다.")
+    @Operation(
+        summary = "토큰 재발급",
+        description = """
+            Refresh Token으로 새로운 Access Token과 Refresh Token을 재발급합니다.
+
+            **인증 불필요 API입니다.** Access Token이 만료된 상태에서 호출하는 것이 정상 시나리오이며,
+            Authorization 헤더는 보지 않습니다. (만료된 AT를 헤더에 실어 보내도 무시됨)
+
+            검증 대상은 body의 refreshToken 뿐이며, 401이 나면 그 시점부터는 재발급이 불가능하므로
+            프론트는 **재로그인 화면으로 보내야 합니다.**
+            """)
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "토큰 재발급 성공"),
-        @ApiResponse(responseCode = "401", description = "토큰 만료 / 형식 오류 / 이미 무효화된 Refresh Token",
+        @ApiResponse(responseCode = "200", description = "토큰 재발급 성공 (AT/RT 모두 새로 발급)"),
+        @ApiResponse(responseCode = "401", description = "Refresh Token 만료 / 형식·서명 오류 / 이미 무효화됨 → 모두 재로그인 필요",
             content = @Content(mediaType = "application/json", examples = {
-                @ExampleObject(name = "TOKEN_EXPIRED",        value = SwaggerErrorExamples.TOKEN_EXPIRED),
-                @ExampleObject(name = "TOKEN_INVALID",        value = SwaggerErrorExamples.TOKEN_INVALID),
-                @ExampleObject(name = "REFRESH_TOKEN_REVOKED",value = SwaggerErrorExamples.REFRESH_TOKEN_REVOKED)
+                @ExampleObject(name = "REFRESH_TOKEN_EXPIRED", value = SwaggerErrorExamples.REFRESH_TOKEN_EXPIRED),
+                @ExampleObject(name = "REFRESH_TOKEN_INVALID", value = SwaggerErrorExamples.REFRESH_TOKEN_INVALID),
+                @ExampleObject(name = "REFRESH_TOKEN_REVOKED", value = SwaggerErrorExamples.REFRESH_TOKEN_REVOKED)
             })),
         @ApiResponse(responseCode = "404", description = "토큰에 담긴 회원이 존재하지 않는 경우",
             content = @Content(mediaType = "application/json", examples =

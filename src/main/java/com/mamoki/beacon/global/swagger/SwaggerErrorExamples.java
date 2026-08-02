@@ -8,7 +8,10 @@ public final class SwaggerErrorExamples {
 
     private SwaggerErrorExamples() {}
 
-    // ── 401 인증 오류 ──────────────────────────────────────────────────────────
+    // ── 401 인증 오류 : Access Token 계열 (프론트 대응 = /auth/refresh 재발급 시도) ──────────
+
+    public static final String TOKEN_MISSING =
+        "{\"success\":false,\"data\":null,\"error\":{\"code\":\"TOKEN_MISSING\",\"message\":\"인증 토큰이 없습니다.\"},\"timestamp\":\"2025-04-25T10:00:00\"}";
 
     public static final String TOKEN_EXPIRED =
         "{\"success\":false,\"data\":null,\"error\":{\"code\":\"TOKEN_EXPIRED\",\"message\":\"Access Token이 만료되었습니다.\"},\"timestamp\":\"2025-04-25T10:00:00\"}";
@@ -18,6 +21,14 @@ public final class SwaggerErrorExamples {
 
     public static final String INVALID_CREDENTIALS =
         "{\"success\":false,\"data\":null,\"error\":{\"code\":\"INVALID_CREDENTIALS\",\"message\":\"학번 또는 비밀번호가 올바르지 않습니다.\"},\"timestamp\":\"2025-04-25T10:00:00\"}";
+
+    // ── 401 인증 오류 : Refresh Token 계열 (프론트 대응 = 재발급 포기 후 재로그인) ────────────
+
+    public static final String REFRESH_TOKEN_EXPIRED =
+        "{\"success\":false,\"data\":null,\"error\":{\"code\":\"REFRESH_TOKEN_EXPIRED\",\"message\":\"Refresh Token이 만료되었습니다. 다시 로그인해주세요.\"},\"timestamp\":\"2025-04-25T10:00:00\"}";
+
+    public static final String REFRESH_TOKEN_INVALID =
+        "{\"success\":false,\"data\":null,\"error\":{\"code\":\"REFRESH_TOKEN_INVALID\",\"message\":\"Refresh Token 형식이 잘못되었거나 서명이 유효하지 않습니다.\"},\"timestamp\":\"2025-04-25T10:00:00\"}";
 
     public static final String REFRESH_TOKEN_REVOKED =
         "{\"success\":false,\"data\":null,\"error\":{\"code\":\"REFRESH_TOKEN_REVOKED\",\"message\":\"이미 무효화된 Refresh Token입니다.\"},\"timestamp\":\"2025-04-25T10:00:00\"}";
