@@ -72,6 +72,10 @@ public class InviteService {
     //초대코드로 가입
     @Transactional
     public void responseInviteCode(Long memberId, Long clubId, String inviteCode) {
+        if (clubId == null) {
+            throw new CustomException(ErrorCode.INVALID_INVITE_CODE);
+        }
+
         Club club = clubRepository.findById(clubId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
 
