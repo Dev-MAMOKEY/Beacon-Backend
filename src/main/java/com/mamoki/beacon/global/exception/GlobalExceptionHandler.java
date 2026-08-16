@@ -4,6 +4,7 @@ import com.mamoki.beacon.global.rsdata.RsData;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.HandlerMapping;
 
 @Slf4j
 @RestControllerAdvice // 컨트롤러에 대해 전역적으로 예외 처리하기 위해 사용하는 어노테이션
@@ -89,7 +91,8 @@ public class GlobalExceptionHandler {
 
     // 커스텀 예외 처리 (나머지 예외는 스프링에서 자동으로 적용시켜주는 것이 없어 커스텀으로 처리함)
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<RsData<Void>> handle(CustomException exception) {
+    public ResponseEntity<RsData<Void>> handle(CustomException exception, HttpServletRequest request) {
+        allowJsonErrorResponse(request);
         return ResponseEntity
                 .status(exception.getErrorCode().getHttpStatus())
                 .body(RsData.fail(exception.getErrorCode()));
@@ -97,10 +100,19 @@ public class GlobalExceptionHandler {
 
     // 서버 에러 (500)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<RsData<Void>> handle(Exception exception) {
+    public ResponseEntity<RsData<Void>> handle(Exception exception, HttpServletRequest request) {
+        allowJsonErrorResponse(request);
         log.error("[500 Internal Server Error] {}: {}", exception.getClass().getName(), exception.getMessage(), exception);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(RsData.fail(ErrorCode.INTERNAL_SERVER_ERROR));
+    }
+
+    // 에러 응답(JSON)을 내보낼 수 있게 "이 요청이 생산 가능한 타입" 제한을 풀어준다.
+    // SSE(/attendance/stream)처럼 produces = text/event-stream 으로 고정된 엔드포인트는
+    // 이 제한 때문에 RsData(JSON)를 못 써서 HttpMediaTypeNotAcceptableException이 나고,
+    // 원래 에러(예: 403 CLUB_ADMIN_REQUIRED)가 통째로 사라진 채 엉뚱한 401로 응답되던 문제가 있었다.
+    private void allowJsonErrorResponse(HttpServletRequest request) {
+        request.removeAttribute(HandlerMapping.PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE);
     }
 }
