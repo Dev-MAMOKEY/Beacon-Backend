@@ -3,6 +3,8 @@ services:
     image: mysql:8.0
     container_name: beacon-db
     environment:
+      # 앱과 DB의 시계를 KST로 통일 (기본값 UTC)
+      TZ: Asia/Seoul
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -25,6 +27,8 @@ services:
     environment:
       # docker profile 활성화
       SPRING_PROFILES_ACTIVE: docker
+      # 타임존 KST 고정 (Dockerfile에도 있지만, 이미지 재빌드 없이도 보장되도록 명시)
+      TZ: Asia/Seoul
       # MySQL 환경 변수
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
