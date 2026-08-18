@@ -1,0 +1,46 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: beacon-db
+    restart: always
+    environment:
+      # 앱과 DB의 시계를 KST로 통일 (기본값 UTC)
+      TZ: Asia/Seoul
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    # 로컬에서 빌드 후 Docker Hub에 푸시한 이미지를 풀해서 실행
+    image: ${DOCKERHUB_USERNAME}/beacon:latest
+    container_name: beacon-app
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # 타임존 KST 고정. Dockerfile(ENV TZ)·BeaconApplication(TimeZone.setDefault)에도 있지만,
+      # 이미지 재빌드 없이도 보장되도록 여기에도 명시.
+      # 없으면 컨테이너가 UTC로 떠서 출석/세션 시각이 9시간 어긋난다.
+      TZ: Asia/Seoul
+      # application-docker.yml에도 넣어뒀지만, 이미지 재빌드 없이도 보장되도록 여기에도 명시.
+      # OSIV가 켜지면 SSE 요청이 DB 커넥션을 30분씩 붙잡아 풀이 고갈된다 (2026-08-04 장애 원인)
+      SPRING_JPA_OPEN_IN_VIEW: "false"
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXP_MIN: ${JWT_ACCESS_EXP_MIN}
+      JWT_REFRESH_EXP_DAY: ${JWT_REFRESH_EXP_DAY}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

@@ -1,0 +1,45 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: beacon-db
+    environment:
+      # 앱과 DB의 시계를 KST로 통일 (기본값 UTC)
+      TZ: Asia/Seoul
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: beacon-app
+    ports:
+      - "8081:8080"
+    environment:
+      # docker profile 활성화
+      SPRING_PROFILES_ACTIVE: docker
+      # 타임존 KST 고정 (Dockerfile에도 있지만, 이미지 재빌드 없이도 보장되도록 명시)
+      TZ: Asia/Seoul
+      # MySQL 환경 변수
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXP_MIN: ${JWT_ACCESS_EXP_MIN}
+      JWT_REFRESH_EXP_DAY: ${JWT_REFRESH_EXP_DAY}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

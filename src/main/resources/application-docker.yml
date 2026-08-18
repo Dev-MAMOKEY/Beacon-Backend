@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:mysql://db:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      # 커넥션을 20초 넘게 반납하지 않는 코드가 있으면 스택트레이스를 로그에 남김 (진단용)
+      leak-detection-threshold: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    # ⚠️ 반드시 false 유지할 것.
+    # application.yml은 .gitignore에 걸려 있어 도커 이미지에 포함되지 않는다.
+    # 그래서 여기에 없으면 스프링 기본값(true)이 적용되고, OSIV가 켜지면
+    # 요청이 끝날 때까지 DB 커넥션을 붙잡는다.
+    # SSE(/attendance/stream)는 최대 30분짜리 비동기 요청이라
+    # 구독 하나당 커넥션 1개를 30분씩 점유 → 풀(기본 10개) 고갈 → 전 API 500.
+    # 2026-08-04 실제 장애 원인이었음.
+    open-in-view: false
+
+custom:
+  jwt:
+    secret-key: ${JWT_SECRET}
+    access-exp-min: ${JWT_ACCESS_EXP_MIN}
+    refresh-exp-day: ${JWT_REFRESH_EXP_DAY}
+
+firebase:
+  beacon-account:
+    path: firebase/beacon-account.json

@@ -1,0 +1,410 @@
+package com.mamoki.beacon.domain.attendance.service;
+
+import com.mamoki.beacon.domain.attendance.dto.*;
+import com.mamoki.beacon.domain.attendance.entity.Attendance;
+import com.mamoki.beacon.domain.attendance.entity.AttendanceStatus;
+import com.mamoki.beacon.domain.attendance.repository.AttendanceRepository;
+import com.mamoki.beacon.domain.beacon_config.repository.BeaconConfigRepository;
+import com.mamoki.beacon.domain.club_member.entity.ClubMember;
+import com.mamoki.beacon.domain.club_member.entity.Role;
+import com.mamoki.beacon.domain.club_member.repository.ClubMemberRepository;
+import com.mamoki.beacon.domain.member.entity.Member;
+import com.mamoki.beacon.domain.member.repository.MemberRepository;
+import com.mamoki.beacon.domain.session.entity.Session;
+import com.mamoki.beacon.domain.session.entity.SessionStatus;
+import com.mamoki.beacon.domain.session.repository.SessionRepository;
+import com.mamoki.beacon.global.exception.CustomException;
+import com.mamoki.beacon.global.exception.ErrorCode;
+import com.mamoki.beacon.global.fcm.service.FcmService;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class AttendanceService {
+    private final AttendanceRepository attendanceRepository;
+    private final SessionRepository sessionRepository;
+    private final MemberRepository memberRepository;
+    private final ClubMemberRepository clubMemberRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final FcmService fcmService;
+    private final AttendanceStreamService attendanceStreamService;
+    private final BeaconConfigRepository beaconConfigRepository;
+
+    private static final long DEFAULT_LATE_THRESHOLD_MINUTES = 10; //지각 기준 기본값 (비콘 설정이 없을 때, 명세서 14-6)
+
+    //관리자 검증 함수
+    public void validateAdmin(Long requesterId, Long clubId) {
+        ClubMember requester = clubMemberRepository.findByMemberIdAndClubId(requesterId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+        if (requester.getRole() != Role.ADMIN) {
+            throw new CustomException(ErrorCode.CLUB_ADMIN_REQUIRED);
+        }
+    }
+
+    @Transactional //출석체크 함수
+    public void checkAttendance(Long memberId, Long clubId, Long sessionId, String otpCode){
+        clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+
+        Session session = sessionRepository.findByIdAndDeletedAtIsNull(sessionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+
+        if (session.getSessionStatus() != SessionStatus.ACTIVE) { //세션 비활성화
+            throw new CustomException(ErrorCode.SESSION_NOT_ACTIVE);
+        }
+        if (session.getOtpCode() == null || !passwordEncoder.matches(otpCode, session.getOtpCode())) { // otp값 없거나 틀릴때
+            throw new CustomException(ErrorCode.INVALID_ATTENDANCE_CODE);
+        }
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (attendanceRepository.existsByMemberAndSession(member, session)) { //출석 중복체크 하기 위한 throw
+            throw new CustomException(ErrorCode.ALREADY_CHECKED_IN);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        //지각 기준은 동아리별 비콘 설정(lateThresholdMinutes)을 따름
+        long lateMinutes = beaconConfigRepository.findByClubId(clubId)
+                .map(config -> config.getLateThresholdMinutes().longValue())
+                .orElse(DEFAULT_LATE_THRESHOLD_MINUTES);
+
+        AttendanceStatus status =
+                now.isAfter(session.getStartAt().plusMinutes(lateMinutes)) //시작시간 + 지각시간일때
+                        ? AttendanceStatus.LATE //true면 지각
+                        : AttendanceStatus.PRESENT;//false면
+
+        attendanceRepository.save(Attendance.builder()
+                .member(member)
+                .session(session)
+                .attendanceStatus(status)
+                .isManual(false)
+                .checkedAt(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build());
+
+        //대시보드 실시간 피드(SSE)로 출석 이벤트 발송
+        attendanceStreamService.publish(clubId, new AttendanceFeedDto(
+                member.getId(), member.getName(), member.getStdId(),
+                session.getId(), session.getSessionName(), status, now));
+
+        //출석한 사람한테만 출석완료되었다고 푸시알림
+        if (Boolean.TRUE.equals(member.getPushEnabled())
+                && member.getFcmToken() != null
+                && !member.getFcmToken().isBlank()) {
+
+            String statusText = switch (status) {
+                case PRESENT -> "출석";
+                case LATE -> "지각";
+                default -> status.name();
+            };
+
+            //fcmservice 단일발송함수 호출
+            fcmService.sendNotification(
+                    "출석 완료",
+                    "'" + session.getSessionName() + "' 출석이 완료되었습니다. (" + statusText + ")",
+                    member.getFcmToken()
+            );
+        }
+    }
+
+    @Transactional //관리자 수동 출석
+    public void manualCheckAttendance(Long adminId, Long clubId, Long sessionId, Long targetMemberId, AttendanceStatus status, String note) {
+        validateAdmin(adminId, clubId);
+
+        if (status == AttendanceStatus.ABSENT) {
+            throw new CustomException(ErrorCode.INVALID_MANUAL_STATUS);
+        }
+
+        Session session = sessionRepository.findByIdAndDeletedAtIsNull(sessionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+
+        if (session.getSessionStatus() != SessionStatus.ACTIVE) {
+            throw new CustomException(ErrorCode.SESSION_NOT_ACTIVE);
+        }
+
+        // 대상 멤버가 동아리 소속인지 확인
+        clubMemberRepository.findByMemberIdAndClubId(targetMemberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+
+        Member target = memberRepository.findById(targetMemberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (attendanceRepository.existsByMemberAndSession(target, session)) {
+            throw new CustomException(ErrorCode.ALREADY_CHECKED_IN);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        attendanceRepository.save(Attendance.builder()
+                .member(target)
+                .session(session)
+                .attendanceStatus(status)
+                .isManual(true)
+                .adminNote(note)
+                .checkedAt(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build());
+
+        //수동 출석도 실시간 피드로 발송
+        attendanceStreamService.publish(clubId, new AttendanceFeedDto(
+                target.getId(), target.getName(), target.getStdId(),
+                session.getId(), session.getSessionName(), status, now));
+    }
+
+    @Transactional //관리자가 직접 출석 상태를 변경하는 함수
+    public void updateStatus(Long adminId, Long clubId, Long recordId,
+                             AttendanceStatus newStatus, String note) {
+        validateAdmin(adminId, clubId);
+
+        Attendance attendance = attendanceRepository.findById(recordId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ATTENDANCE_NOT_FOUND));
+
+        attendance.updateStatus(newStatus, note);
+    }
+
+    public AttendanceRateResponse getAttendanceRate(Long memberId, Long clubId) {
+        ClubMember clubMember = clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+
+        LocalDateTime joinedAt = clubMember.getJoinedAt();
+
+        // 분모: 가입일 이후 열린 세션 수
+        long totalSessions = sessionRepository
+                .countByClubIdAndStartAtGreaterThanEqualAndDeletedAtIsNull(clubId, joinedAt);
+
+        // 분자: PRESENT + LATE + ETC
+        long attendedCount = attendanceRepository.countAttendedByMemberAndClub(
+                memberId, clubId, joinedAt,
+                List.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.ETC)
+        );
+
+        double rate = (totalSessions == 0)
+                ? 0.0
+                : (double) attendedCount / totalSessions * 100.0;
+
+        return new AttendanceRateResponse(memberId, clubId, totalSessions, attendedCount, rate);
+    }
+
+    //출석 조회 함수
+    @Transactional(readOnly = true) //LAZY 연관(member) 접근을 위해 필요 (없으면 LazyInitializationException 500)
+    public Slice<AttendanceDto> getSessionAttendance(
+            Long adminId, Long clubId, Long sessionId, Pageable pageable) {
+
+        validateAdmin(adminId, clubId);
+
+        Session session = sessionRepository.findByIdAndDeletedAtIsNull(sessionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.SESSION_NOT_FOUND));
+
+        return attendanceRepository.findBySession(session, pageable)
+                .map(a -> new AttendanceDto(
+                        a.getAttendanceId(),
+                        a.getMember().getId(),
+                        a.getMember().getName(),
+                        a.getMember().getStdId(),
+                        a.getAttendanceStatus(),
+                        a.getCheckedAt(),
+                        a.getIsManual(),
+                        a.getAdminNote()
+                ));
+    }
+
+    //월별 출석 기록 조회 함수
+    @Transactional(readOnly = true)
+    public MyAttendanceRecordDto getMyAttendanceRecord(Long memberId, Long clubId, int year, int month) {
+        clubMemberRepository.findByMemberIdAndClubId(memberId, clubId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_CLUB_MEMBER));
+
+        //리스트에 저장
+        List<Attendance> records = attendanceRepository.findMonthlyRecordsByMemberAndClub(
+                memberId, clubId, year, month);
+
+        //세션별 정보들을 리스트에 저장
+        List<MyAttendanceRecordDto.AttendanceRecordItem> items = records.stream()
+                .map(a -> new MyAttendanceRecordDto.AttendanceRecordItem(
+                        a.getSession().getId(),
+                        a.getSession().getSessionName(),
+                        a.getSession().getStartAt().toLocalDate(),
+                        a.getAttendanceStatus(),
+                        a.getCheckedAt(),
+                        a.getAdminNote()
+                ))
+                .toList();
+
+        //status별로 숫자 체크를 하기위한 Map 생성
+        Map<AttendanceStatus, Long> countMap = records.stream()
+                .collect(Collectors.groupingBy(Attendance::getAttendanceStatus, Collectors.counting()));
+
+        //Map에 있던 값들을(출석값들) DTO에 넘김
+        MyAttendanceRecordDto.StatusSummary summary = new MyAttendanceRecordDto.StatusSummary(
+                countMap.getOrDefault(AttendanceStatus.PRESENT, 0L),
+                countMap.getOrDefault(AttendanceStatus.LATE, 0L),
+                countMap.getOrDefault(AttendanceStatus.ABSENT, 0L),
+                countMap.getOrDefault(AttendanceStatus.ETC, 0L)
+        );
+
+        //출석 조회함수에서 rate만 꺼내서 dto에 넣음
+        AttendanceRateResponse response = getAttendanceRate(memberId, clubId);
+        return new MyAttendanceRecordDto(year, month, items, summary, response.rate());
+    }
+
+    @Transactional(readOnly = true)
+    public TrendResponseDto getTrend(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate) {
+        validateAdmin(adminId, clubId); //운영진 검증
+
+        LocalDateTime startAt = startDate.atStartOfDay(); //월초
+        LocalDateTime endAt = endDate.atTime(23, 59, 59); //월말
+
+        List<Object[]> rows = attendanceRepository.countBySessionAndStatus(clubId, startAt, endAt);
+
+        // 세션별로 매핑
+        Map<Long, TrendResponseDto.TrendItem> sessionMap = new LinkedHashMap<>();
+
+
+        for (Object[] row : rows) {
+            //컬럼값들을 변수에 다 담음
+            Long sessionId = ((Number) row[0]).longValue();
+            String sessionName = (String) row[1];
+            LocalDate date = ((LocalDateTime) row[2]).toLocalDate();
+            AttendanceStatus status = (AttendanceStatus) row[3];
+            long count = ((Number) row[4]).longValue();
+
+            //출석률 계산
+            sessionMap.compute(sessionId, (id, existing) -> {
+                long prevTotal = existing != null ? existing.total() : 0L;
+                long prevAttended = existing != null ? existing.attended() : 0L;
+
+                boolean isAttended = status == AttendanceStatus.PRESENT
+                        || status == AttendanceStatus.LATE
+                        || status == AttendanceStatus.ETC;
+
+                long newTotal = prevTotal + count;
+                long newAttended = prevAttended + (isAttended ? count : 0L);
+                double rate = newTotal == 0 ? 0.0 : (double) newAttended / newTotal * 100.0;
+
+                return new TrendResponseDto.TrendItem(sessionId, sessionName, date, newTotal, newAttended, rate);
+            });
+        }
+
+        return new TrendResponseDto(new ArrayList<>(sessionMap.values()));
+    }
+
+    @Transactional(readOnly = true)
+    public MemberStatsResponseDto getMemberStats(Long adminId, Long clubId) {
+        validateAdmin(adminId, clubId); //운영진 검증
+
+        List<ClubMember> members = clubMemberRepository.findByClubIdAndDeletedAtIsNull(clubId);
+
+        //멤버 리스트를 돌면서 출석률 계산하고 이 리스트에 넣음
+        List<MemberStatsResponseDto.MemberStatItem> items = members.stream()
+                .map(cm -> {
+                    AttendanceRateResponse rate = getAttendanceRate(cm.getMember().getId(), clubId);
+                    return new MemberStatsResponseDto.MemberStatItem( //getAttendanceRate로 뽑아서 채우고 나머지도 넣기
+                            cm.getMember().getId(),
+                            cm.getMember().getName(),
+                            cm.getMember().getStdId(),
+                            rate.totalSessions(),
+                            rate.attendedCount(),
+                            rate.rate()
+                    );
+                })
+                .toList();
+
+        return new MemberStatsResponseDto(items);
+    }
+
+    @Transactional(readOnly = true)
+    public DistributionResponseDto getDistribution(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate) {
+        validateAdmin(adminId, clubId); //어드민 검증
+
+        LocalDateTime startAt = startDate.atStartOfDay(); //1일
+        LocalDateTime endAt = endDate.atTime(23, 59, 59); //월 마지막날
+
+        List<Object[]> rows = attendanceRepository.countByStatusGrouped(clubId, startAt, endAt);
+
+        //map에 컬럼담아서 계산
+        Map<AttendanceStatus, Long> countMap = new HashMap<>();
+        for (Object[] row : rows) {
+            countMap.put((AttendanceStatus) row[0], ((Number) row[1]).longValue());
+        }
+
+        long present = countMap.getOrDefault(AttendanceStatus.PRESENT, 0L);
+        long late    = countMap.getOrDefault(AttendanceStatus.LATE, 0L);
+        long absent  = countMap.getOrDefault(AttendanceStatus.ABSENT, 0L);
+        long etc     = countMap.getOrDefault(AttendanceStatus.ETC, 0L);
+        long total   = present + late + absent + etc;
+
+        double presentRate = total == 0 ? 0.0 : (double) present / total * 100.0;
+        double lateRate    = total == 0 ? 0.0 : (double) late    / total * 100.0;
+        double absentRate  = total == 0 ? 0.0 : (double) absent  / total * 100.0;
+        double etcRate     = total == 0 ? 0.0 : (double) etc     / total * 100.0;
+
+        return new DistributionResponseDto(total, present, presentRate, late, lateRate, absent, absentRate, etc, etcRate);
+    }
+
+    //출석률을 파일로 뽑아내기 위한 함수
+    @Transactional(readOnly = true)
+    public ExportResponseDto getExportData(Long adminId, Long clubId, LocalDate startDate, LocalDate endDate, Long memberId) {
+        validateAdmin(adminId, clubId);
+
+        LocalDateTime startAt = startDate.atStartOfDay();
+        LocalDateTime endAt = endDate.atTime(23, 59, 59);
+
+        List<Attendance> records = attendanceRepository.findForExport(clubId, startAt, endAt, memberId);
+
+        List<ExportResponseDto.ExportItem> items = records.stream()
+                .map(a -> new ExportResponseDto.ExportItem(
+                        a.getMember().getName(),
+                        a.getMember().getStdId(),
+                        a.getSession().getSessionName(),
+                        a.getSession().getStartAt().toLocalDate(),
+                        a.getAttendanceStatus(),
+                        a.getAdminNote()
+                ))
+                .toList();
+
+        return new ExportResponseDto(items);
+    }
+
+    //대시보드 상단 요약 카드 (오늘 출석/지각, 전체 인원, 평균 출석률)
+    @Transactional(readOnly = true)
+    public SummaryResponseDto getSummary(Long adminId, Long clubId) {
+        validateAdmin(adminId, clubId);
+
+        //오늘 0시 ~ 내일 0시 직전까지의 출석을 상태별로 집계
+        LocalDate today = LocalDate.now();
+        List<Object[]> rows = attendanceRepository.countByStatusGrouped(
+                clubId, today.atStartOfDay(), today.atTime(23, 59, 59));
+
+        long todayPresent = 0L;
+        long todayLate = 0L;
+        for (Object[] row : rows) {
+            AttendanceStatus status = (AttendanceStatus) row[0];
+            long count = ((Number) row[1]).longValue();
+            if (status == AttendanceStatus.PRESENT) todayPresent = count;
+            if (status == AttendanceStatus.LATE) todayLate = count;
+        }
+
+        //전체 멤버 수 + 평균 출석률 (기존 멤버별 출석률 로직 재사용)
+        List<MemberStatsResponseDto.MemberStatItem> memberStats = getMemberStats(adminId, clubId).members();
+        long totalMembers = memberStats.size();
+        double avgRate = memberStats.stream()
+                .mapToDouble(MemberStatsResponseDto.MemberStatItem::attendanceRate)
+                .average()
+                .orElse(0.0);
+
+        return new SummaryResponseDto(todayPresent, todayLate, totalMembers, avgRate);
+    }
+}
